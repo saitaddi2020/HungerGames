@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>My Profile</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f8; padding: 20px; }
+        .container { max-width: 600px; margin: auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+        .profile-detail { margin-bottom: 15px; font-size: 1.1em; }
+        .btn { padding: 10px 20px; background: #dc3545; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; margin-top: 10px; }
+        .message { color: #dc3545; margin-top: 15px; font-weight: 500; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+  <h2>My Profile</h2>
+  <div class="profile-detail"><strong>Username:</strong> <span id="username">Loading...</span></div>
+  <div class="profile-detail"><strong>Email:</strong> <span id="email">Loading...</span></div>
+  <div class="profile-detail"><strong>Role:</strong> <span id="role">Loading...</span></div>
+  <button class="btn" onclick="logout()">Logout</button>
+  <p class="message" id="message"></p>
+</div>
+
+<!-- KEEP THIS SCRIPT BLOCK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+    // 🚀 REFACTORED to use Firebase v9 modular imports
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, doc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+
+    const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+    // Initialize Firebase services using the imported functions
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    const SUPER_ADMIN_EMAIL = "saitaddi1432@gmail.com";
+
+    onAuthStateChanged(auth, async (user) => {
+        if (!user) {
+            document.getElementById("message").textContent = "Not logged in. Redirecting...";
+            setTimeout(() => { window.location.href = "index.html"; }, 1500);
+            return;
+        }
+
+        document.getElementById("email").textContent = user.email;
+
+        try {
+            // Special case for Super Admin
+            if (user.email === SUPER_ADMIN_EMAIL) {
+                document.getElementById("username").textContent = "SuperAdmin";
+                document.getElementById("role").textContent = "Super Admin";
+                return;
+            }
+
+            // For all other users (admins and regular users)
+            const userDocRef = doc(db, "users", user.uid);
+            const userDoc = await getDoc(userDocRef);
+
+            if (userDoc.exists()) {
+                const userData = userDoc.data();
+                document.getElementById("username").textContent = userData.username || "N/A";
+                const role = userData.role || 'user';
+                document.getElementById("role").textContent = role.charAt(0).toUpperCase() + role.slice(1);
+            } else {
+                 throw new Error("Profile data not found.");
+            }
+        } catch (error) {
+             console.error("Error loading profile:", error);
+             document.getElementById("message").textContent = "Failed to load profile data.";
+        }
+    });
+
+    // Make logout globally accessible for the onclick attribute
+    window.logout = function() {
+        signOut(auth).then(() => {
+            window.location.href = "index.html";
+        });
+    }
+</script>
+
+</body>
+</html>

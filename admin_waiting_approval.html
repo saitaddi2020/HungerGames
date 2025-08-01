@@ -1,0 +1,490 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Approval Pending - Dynamic</title>
+  <style>
+    :root {
+      --primary-color: #1a73e8;
+      --primary-hover: #155ab6;
+      --success-color: #34a853;
+      --warning-color: #fbbc04;
+      --text-primary: #202124;
+      --text-secondary: #5f6368;
+      --surface: rgba(255, 255, 255, 0.1);
+      --glass-bg: rgba(255, 255, 255, 0.25);
+      --particle-color: rgba(26, 115, 232, 0.6);
+    }
+
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+
+    body {
+      font-family: 'Segoe UI', -apple-system, BlinkMacSystemFont, sans-serif;
+      background: linear-gradient(-45deg, #667eea, #764ba2, #6B73FF, #9A9CE3);
+      background-size: 400% 400%;
+      animation: gradientShift 15s ease infinite;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    @keyframes gradientShift {
+      0% { background-position: 0% 50%; }
+      50% { background-position: 100% 50%; }
+      100% { background-position: 0% 50%; }
+    }
+
+    .particles {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      z-index: 1;
+    }
+
+    .particle {
+      position: absolute;
+      background: var(--particle-color);
+      border-radius: 50%;
+      pointer-events: none;
+      animation: float 20s infinite linear;
+    }
+
+    @keyframes float {
+      0% {
+        transform: translateY(100vh) rotate(0deg);
+        opacity: 0;
+      }
+      10% {
+        opacity: 1;
+      }
+      90% {
+        opacity: 1;
+      }
+      100% {
+        transform: translateY(-100px) rotate(360deg);
+        opacity: 0;
+      }
+    }
+
+    .container {
+      background: var(--glass-bg);
+      backdrop-filter: blur(20px);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      padding: 50px 60px;
+      border-radius: 20px;
+      box-shadow: 
+        0 20px 40px rgba(0, 0, 0, 0.1),
+        0 10px 20px rgba(0, 0, 0, 0.15),
+        inset 0 1px 0 rgba(255, 255, 255, 0.2);
+      max-width: 550px;
+      width: 100%;
+      text-align: center;
+      position: relative;
+      z-index: 10;
+      transform: scale(1);
+      transition: all 0.3s ease;
+    }
+
+    .container:hover {
+      transform: scale(1.02);
+      box-shadow: 
+        0 25px 50px rgba(0, 0, 0, 0.15),
+        0 15px 30px rgba(0, 0, 0, 0.2),
+        inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+
+    .status-icon {
+      position: relative;
+      display: inline-block;
+      margin-bottom: 30px;
+    }
+
+    .hourglass {
+      font-size: 48px;
+      display: block;
+      animation: rotate 3s infinite linear;
+    }
+
+    @keyframes rotate {
+      0% { transform: rotate(0deg); }
+      50% { transform: rotate(180deg); }
+      100% { transform: rotate(360deg); }
+    }
+
+    .pulse-ring {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
+      width: 80px;
+      height: 80px;
+      border: 2px solid var(--primary-color);
+      border-radius: 50%;
+      animation: pulse 2s infinite;
+    }
+
+    .pulse-ring:nth-child(2) {
+      animation-delay: 0.5s;
+    }
+
+    .pulse-ring:nth-child(3) {
+      animation-delay: 1s;
+    }
+
+    @keyframes pulse {
+      0% {
+        opacity: 1;
+        transform: translate(-50%, -50%) scale(0.8);
+      }
+      50% {
+        opacity: 0.6;
+      }
+      100% {
+        opacity: 0;
+        transform: translate(-50%, -50%) scale(1.5);
+      }
+    }
+
+    h2 {
+      font-size: 28px;
+      color: var(--text-primary);
+      margin-bottom: 20px;
+      font-weight: 700;
+      text-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+    }
+
+    .description {
+      color: var(--text-secondary);
+      font-size: 16px;
+      line-height: 1.6;
+      margin-bottom: 30px;
+      font-weight: 400;
+    }
+
+    .progress-container {
+      margin: 30px 0;
+      padding: 20px;
+      background: rgba(255, 255, 255, 0.1);
+      border-radius: 15px;
+      border: 1px solid rgba(255, 255, 255, 0.1);
+    }
+
+    .progress-bar {
+      width: 100%;
+      height: 8px;
+      background: rgba(255, 255, 255, 0.2);
+      border-radius: 4px;
+      overflow: hidden;
+      margin-bottom: 15px;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, var(--primary-color), var(--success-color));
+      border-radius: 4px;
+      width: 0%;
+      animation: fillProgress 6s ease-in-out infinite;
+      position: relative;
+    }
+
+    @keyframes fillProgress {
+      0% { width: 0%; }
+      50% { width: 75%; }
+      100% { width: 0%; }
+    }
+
+    .progress-fill::after {
+      content: '';
+      position: absolute;
+      top: 0;
+      right: 0;
+      width: 20px;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.4));
+      animation: shine 1.5s infinite;
+    }
+
+    @keyframes shine {
+      0% { transform: translateX(-20px); opacity: 0; }
+      50% { opacity: 1; }
+      100% { transform: translateX(20px); opacity: 0; }
+    }
+
+    .status-message {
+      font-size: 14px;
+      color: var(--text-secondary);
+      font-weight: 500;
+      min-height: 20px;
+      transition: all 0.3s ease;
+    }
+
+    .action-button {
+      display: inline-block;
+      padding: 16px 35px;
+      background: linear-gradient(135deg, var(--primary-color), #4285f4);
+      color: white;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 16px;
+      border-radius: 12px;
+      position: relative;
+      overflow: hidden;
+      transition: all 0.3s ease;
+      border: none;
+      cursor: pointer;
+      box-shadow: 0 8px 20px rgba(26, 115, 232, 0.3);
+    }
+
+    .action-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 12px 30px rgba(26, 115, 232, 0.4);
+    }
+
+    .action-button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.2), transparent);
+      transition: left 0.6s ease;
+    }
+
+    .action-button:hover::before {
+      left: 100%;
+    }
+
+    .action-button .button-text {
+      position: relative;
+      z-index: 2;
+      transition: all 0.3s ease;
+    }
+
+    .action-button:hover .button-text {
+      transform: translateX(5px);
+    }
+
+    .action-button::after {
+      content: '→';
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%) translateX(10px);
+      opacity: 0;
+      transition: all 0.3s ease;
+      font-size: 18px;
+    }
+
+    .action-button:hover::after {
+      opacity: 1;
+      transform: translateY(-50%) translateX(0);
+    }
+
+    @media (max-width: 600px) {
+      .container {
+        padding: 40px 30px;
+        margin: 20px;
+      }
+
+      h2 {
+        font-size: 24px;
+      }
+
+      .hourglass {
+        font-size: 36px;
+      }
+
+      .pulse-ring {
+        width: 60px;
+        height: 60px;
+      }
+    }
+
+    .fade-in {
+      animation: fadeIn 1s ease-out;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(20px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="particles"></div>
+  
+  <div class="container fade-in">
+    <div class="status-icon">
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <div class="pulse-ring"></div>
+      <span class="hourglass">⏳</span>
+    </div>
+    
+    <h2>Your Admin Account is Under Review</h2>
+    
+    <p class="description">
+      Thank you for registering. Your account is currently pending approval from the Super Admin. 
+      You will be able to log in once your account has been verified and activated.
+    </p>
+
+    <div class="progress-container">
+      <div class="progress-bar">
+        <div class="progress-fill"></div>
+      </div>
+      <div class="status-message" id="statusMessage">
+        Processing your request...
+      </div>
+    </div>
+
+    <a href="index.html" class="action-button">
+      <span class="button-text">Return to Login Page</span>
+    </a>
+  </div>
+
+  <script>
+    // Particle system
+    function createParticles() {
+      const particlesContainer = document.querySelector('.particles');
+      const particleCount = 50;
+
+      for (let i = 0; i < particleCount; i++) {
+        const particle = document.createElement('div');
+        particle.className = 'particle';
+        
+        // Random size between 2-6px
+        const size = Math.random() * 4 + 2;
+        particle.style.width = size + 'px';
+        particle.style.height = size + 'px';
+        
+        // Random horizontal position
+        particle.style.left = Math.random() * 100 + '%';
+        
+        // Random animation duration between 15-25s
+        const duration = Math.random() * 10 + 15;
+        particle.style.animationDuration = duration + 's';
+        
+        // Random delay up to 20s
+        particle.style.animationDelay = Math.random() * 20 + 's';
+        
+        particlesContainer.appendChild(particle);
+      }
+    }
+
+    // Status messages rotation
+    const statusMessages = [
+      "Processing your request...",
+      "Validating credentials...",
+      "Contacting admin team...",
+      "Reviewing application...",
+      "Almost ready...",
+      "Finalizing approval..."
+    ];
+
+    let messageIndex = 0;
+
+    function updateStatusMessage() {
+      const messageElement = document.getElementById('statusMessage');
+      messageElement.style.opacity = '0';
+      
+      setTimeout(() => {
+        messageElement.textContent = statusMessages[messageIndex];
+        messageElement.style.opacity = '1';
+        messageIndex = (messageIndex + 1) % statusMessages.length;
+      }, 300);
+    }
+
+    // Enhanced button interaction
+    document.querySelector('.action-button').addEventListener('mouseenter', function() {
+      this.style.transform = 'translateY(-3px) scale(1.05)';
+    });
+
+    document.querySelector('.action-button').addEventListener('mouseleave', function() {
+      this.style.transform = 'translateY(0) scale(1)';
+    });
+
+    // Container glow effect on mouse move
+    document.querySelector('.container').addEventListener('mousemove', function(e) {
+      const rect = this.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const y = e.clientY - rect.top;
+      
+      this.style.background = `radial-gradient(circle at ${x}px ${y}px, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.1))`;
+    });
+
+    document.querySelector('.container').addEventListener('mouseleave', function() {
+      this.style.background = 'rgba(255, 255, 255, 0.25)';
+    });
+
+    // Initialize everything when page loads
+    document.addEventListener('DOMContentLoaded', function() {
+      createParticles();
+      
+      // Start status message rotation after 2 seconds
+      setTimeout(() => {
+        setInterval(updateStatusMessage, 3000);
+      }, 2000);
+      
+      // Add entrance animation to elements
+      const elements = document.querySelectorAll('.container > *');
+      elements.forEach((el, index) => {
+        el.style.animationDelay = (index * 0.1) + 's';
+        el.classList.add('fade-in');
+      });
+    });
+
+    // Add some interactive sparkle effects
+    document.addEventListener('click', function(e) {
+      const sparkle = document.createElement('div');
+      sparkle.style.position = 'absolute';
+      sparkle.style.left = e.pageX + 'px';
+      sparkle.style.top = e.pageY + 'px';
+      sparkle.style.width = '10px';
+      sparkle.style.height = '10px';
+      sparkle.style.background = 'radial-gradient(circle, #fff, transparent)';
+      sparkle.style.borderRadius = '50%';
+      sparkle.style.pointerEvents = 'none';
+      sparkle.style.animation = 'sparkle 0.6s ease-out forwards';
+      sparkle.style.zIndex = '1000';
+      
+      document.body.appendChild(sparkle);
+      
+      setTimeout(() => sparkle.remove(), 600);
+    });
+
+    // Add sparkle animation
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes sparkle {
+        0% {
+          transform: scale(0);
+          opacity: 1;
+        }
+        50% {
+          transform: scale(1);
+          opacity: 0.8;
+        }
+        100% {
+          transform: scale(0);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+</body>
+</html>

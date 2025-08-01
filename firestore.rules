@@ -1,0 +1,51 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ✅ USERS COLLECTION
+    match /users/{userId} {
+      allow list: if request.auth != null;
+      allow get, update, create: if request.auth != null && request.auth.uid == userId;
+    }
+
+    // ✅ ADMINS (CATERERS) COLLECTION
+    match /admins/{adminId} {
+      allow list: if request.auth != null;
+
+      allow get: if request.auth != null &&
+                 (request.auth.uid == adminId || request.auth.token.email == 'saitaddi1432@gmail.com');
+
+      allow create: if request.auth != null && request.auth.uid == adminId;
+
+      allow update: if request.auth != null &&
+                    (request.auth.uid == adminId || request.auth.token.email == 'saitaddi1432@gmail.com');
+
+      allow delete: if request.auth != null &&
+                    request.auth.token.email == 'saitaddi1432@gmail.com';
+    }
+
+    // ✅ PRODUCTS COLLECTION
+    match /products/{productId} {
+      allow read: if request.auth != null;
+
+      allow create: if request.auth != null &&
+                    request.auth.uid == request.resource.data.catererId;
+
+      allow update, delete: if request.auth != null &&
+                            request.auth.uid == resource.data.catererId;
+    }
+
+    // ✅ CART COLLECTION
+    match /cart/{cartId} {
+      allow read, write: if request.auth != null &&
+                          request.auth.uid == request.resource.data.userId;
+    }
+
+    // ✅ ORDERS COLLECTION
+    match /orders/{orderId} {
+      allow create: if request.auth.uid == request.resource.data.userId;
+
+      allow read, update: if request.auth.uid == resource.data.userId;
+    }
+  }
+}

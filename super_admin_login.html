@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Login</title>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --primary-hover: #155ab6;
+            --error-color: #d93025;
+            --light-gray: #f0f2f5;
+            --dark-gray: #333;
+            --secondary-color: #5f6368; /* Added for link styling */
+            --border-color: #dadce0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: var(--light-gray);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+        }
+        .login-container {
+            background: #fff;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 380px;
+            box-sizing: border-box;
+            text-align: center;
+        }
+        h2 { margin: 0 0 25px; color: var(--dark-gray); font-size: 24px; }
+        .input-group { margin-bottom: 20px; }
+        input {
+            width: 100%; padding: 14px; border: 1px solid var(--border-color);
+            border-radius: 8px; font-size: 16px; box-sizing: border-box; transition: border-color 0.2s;
+        }
+        input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2); }
+        button {
+            width: 100%; padding: 14px; background-color: var(--primary-color); color: white;
+            border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: background-color 0.2s, opacity 0.2s;
+        }
+        button:hover { background-color: var(--primary-hover); }
+        button:disabled { opacity: 0.7; cursor: not-allowed; }
+        .error { color: var(--error-color); margin-top: 15px; min-height: 20px; font-weight: 500; }
+        
+        /* ✨ FIX: Styles for the new redirect link */
+        .footer-link {
+            margin-top: 25px;
+            text-align: center;
+        }
+        .footer-link a {
+            color: var(--secondary-color);
+            text-decoration: none;
+            font-weight: 500;
+            font-size: 14px;
+            transition: color 0.2s;
+        }
+        .footer-link a:hover {
+            color: var(--primary-color);
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+
+<div class="login-container">
+    <form id="loginForm">
+        <h2>Super Admin Login</h2>
+        <div class="input-group">
+            <input type="email" id="email" placeholder="Email" required />
+        </div>
+        <div class="input-group">
+            <input type="password" id="password" placeholder="Password" required />
+        </div>
+        <button type="submit" id="loginButton">Login</button>
+        <p class="error" id="errorMsg"></p>
+    </form>
+    
+    <!-- ✨ FIX: Added the redirect link here -->
+    <div class="footer-link">
+        <a href="index.html">Return to User & Caterer Login</a>
+    </div>
+</div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+    const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+
+    const loginForm = document.getElementById('loginForm');
+    const emailInput = document.getElementById('email');
+    const passwordInput = document.getElementById('password');
+    const loginButton = document.getElementById('loginButton');
+    const errorMsg = document.getElementById('errorMsg');
+
+    const SUPER_ADMIN_EMAIL = "saitaddi1432@gmail.com";
+
+    loginForm.addEventListener('submit', (e) => {
+        e.preventDefault();
+        login();
+    });
+
+    async function login() {
+        const email = emailInput.value.trim();
+        const password = passwordInput.value.trim();
+
+        errorMsg.innerText = "";
+        loginButton.disabled = true;
+        loginButton.innerText = "Logging in...";
+
+        try {
+            const userCredential = await signInWithEmailAndPassword(auth, email, password);
+            
+            if (userCredential.user.email === SUPER_ADMIN_EMAIL) {
+                window.location.href = "super_admin.html";
+            } else {
+                await signOut(auth);
+                errorMsg.innerText = "Access Denied. Only the Super Admin can log in.";
+            }
+
+        } catch (error) {
+            switch (error.code) {
+                case 'auth/user-not-found':
+                case 'auth/wrong-password':
+                case 'auth/invalid-credential':
+                    errorMsg.innerText = "Invalid email or password.";
+                    break;
+                case 'auth/invalid-email':
+                    errorMsg.innerText = "Please enter a valid email address.";
+                    break;
+                default:
+                    errorMsg.innerText = "An unexpected error occurred.";
+                    console.error("Login Error:", error);
+            }
+        } finally {
+            loginButton.disabled = false;
+            loginButton.innerText = "Login";
+        }
+    }
+</script>
+
+</body>
+</html>

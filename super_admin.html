@@ -1,0 +1,196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Super Admin Dashboard</title>
+    <style>
+        :root {
+            --primary-color: #1a73e8;
+            --success-color: #1e8e3e;
+            --danger-color: #d93025;
+            --light-gray: #f1f3f4;
+            --dark-gray: #202124;
+            --border-color: #dadce0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: var(--light-gray);
+            margin: 0;
+            padding: 20px;
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            max-width: 900px;
+            margin: 0 auto 30px auto;
+        }
+        h2 { color: var(--dark-gray); margin: 0; }
+        .logout-btn {
+            padding: 10px 20px; background-color: var(--danger-color); color: white;
+            border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
+            transition: background-color 0.2s;
+        }
+        .logout-btn:hover { background-color: #c5221f; }
+        #adminListContainer { max-width: 900px; margin: 0 auto; }
+        .status-message { text-align: center; font-size: 18px; color: #5f6368; margin-top: 50px; }
+        .admin-card {
+            background: white; border-radius: 12px; border: 1px solid var(--border-color);
+            margin-bottom: 20px; padding: 25px; display: flex; flex-wrap: wrap;
+            justify-content: space-between; align-items: center; gap: 20px;
+            transition: box-shadow 0.2s;
+        }
+        .admin-card:hover { box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .admin-info { flex-grow: 1; }
+        .admin-card h3 { margin: 0 0 12px; color: var(--dark-gray); }
+        .admin-card p { margin: 4px 0; color: #5f6368; }
+        .admin-card p strong { color: #3c4043; }
+        .status { font-weight: bold; }
+        .status.approved { color: var(--success-color); }
+        .status.not-approved { color: var(--danger-color); }
+        .action-btn {
+            padding: 10px 20px; background-color: var(--primary-color); color: white;
+            border: none; border-radius: 8px; cursor: pointer; font-weight: 600;
+            transition: background-color 0.2s, opacity 0.2s; white-space: nowrap;
+        }
+        .action-btn:hover { background-color: #155ab6; }
+        .action-btn:disabled { opacity: 0.7; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h2>👑 Super Admin Dashboard</h2>
+        <button class="logout-btn" onclick="logout()">🚪 Logout</button>
+    </div>
+
+    <div id="adminListContainer">
+        <p class="status-message" id="loadingMessage">Loading registered admins...</p>
+    </div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+        import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+        // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+       const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        const SUPER_ADMIN_EMAIL = "saitaddi1432@gmail.com";
+        const adminListContainer = document.getElementById('adminListContainer');
+        const loadingMessage = document.getElementById('loadingMessage');
+
+        onAuthStateChanged(auth, user => {
+            if (user && user.email === SUPER_ADMIN_EMAIL) {
+                loadAdmins();
+            } else {
+                handleUnauthorizedAccess();
+            }
+        });
+        
+        function handleUnauthorizedAccess() {
+            signOut(auth).finally(() => {
+                const currentPath = window.location.pathname;
+                const newPath = currentPath.substring(0, currentPath.lastIndexOf('/')) + '/super_admin_login.html';
+                window.location.href = newPath;
+            });
+        }
+
+        function logout() {
+            signOut(auth).catch(err => {
+                console.error("Logout failed:", err);
+                alert("Logout failed. Please try again.");
+            });
+        }
+
+        function renderAdminCard(adminData, docId) {
+            const card = document.createElement("div");
+            card.className = "admin-card";
+            card.id = `admin-${docId}`;
+
+            // ✨ FIX: Changed bitwise OR (|) to logical OR (||)
+            const createdAt = adminData.timestamp?.toDate().toLocaleString() || "N/A";
+            const statusClass = adminData.approved ? 'approved' : 'not-approved';
+            const statusText = adminData.approved ? '✅ Approved' : '❌ Not Approved';
+
+            let approveButtonHTML = '';
+            if (!adminData.approved) {
+                approveButtonHTML = `<button class="action-btn" onclick="approveAdmin('${docId}', this)">Approve Admin</button>`;
+            }
+
+            card.innerHTML = `
+                <div class="admin-info">
+                    <h3>👤 ${adminData.username || 'N/A'}</h3>
+                    <p><strong>Email:</strong> ${adminData.email || 'N/A'}</p>
+                    <p><strong>Registered On:</strong> ${createdAt}</p>
+                    <p><strong>Status:</strong> <span class="status ${statusClass}">${statusText}</span></p>
+                </div>
+                <div class="admin-actions">
+                    ${approveButtonHTML}
+                </div>
+            `;
+            return card;
+        }
+
+        async function loadAdmins() {
+            loadingMessage.style.display = 'block';
+            adminListContainer.innerHTML = '';
+            adminListContainer.appendChild(loadingMessage);
+
+            try {
+                const q = query(collection(db, "admins"), orderBy("timestamp", "desc"));
+                const snapshot = await getDocs(q);
+                
+                loadingMessage.style.display = 'none';
+
+                if (snapshot.empty) {
+                    adminListContainer.innerHTML = "<p class='status-message'>No admins are currently registered.</p>";
+                    return;
+                }
+                
+                snapshot.forEach(doc => {
+                    const card = renderAdminCard(doc.data(), doc.id);
+                    adminListContainer.appendChild(card);
+                });
+
+            } catch (err) {
+                console.error("Failed to load admins:", err);
+                loadingMessage.innerText = "Error loading admin data. Please refresh the page.";
+                loadingMessage.style.color = 'var(--danger-color)';
+            }
+        }
+
+        async function approveAdmin(adminId, buttonElement) {
+            buttonElement.disabled = true;
+            buttonElement.innerText = "Approving...";
+
+            try {
+                const adminRef = doc(db, "admins", adminId);
+                await updateDoc(adminRef, { approved: true });
+                
+                const updatedDoc = await getDoc(adminRef);
+                const updatedCard = renderAdminCard(updatedDoc.data(), adminId);
+                document.getElementById(`admin-${adminId}`).replaceWith(updatedCard);
+            } catch (err) {
+                alert("❌ Failed to approve admin: " + err.message);
+                buttonElement.disabled = false;
+                buttonElement.innerText = "Approve Admin";
+            }
+        }
+
+        window.logout = logout;
+        window.approveAdmin = approveAdmin;
+    </script>
+</body>
+</html>

@@ -1,0 +1,258 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Register</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f2f4f8;
+      margin: 0;
+      display: flex;
+      justify-content: center;
+      align-items: flex-start;
+      min-height: 100vh;
+      padding: 40px 15px;
+    }
+
+    .container {
+      background: white;
+      padding: 30px 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 25px rgba(0, 0, 0, 0.1);
+      width: 100%;
+      max-width: 550px;
+      box-sizing: border-box;
+    }
+
+    h2 {
+      margin-bottom: 25px;
+      color: #333;
+      text-align: center;
+      font-weight: 600;
+    }
+
+    .role-toggle {
+      display: flex;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      margin-bottom: 25px;
+      overflow: hidden;
+    }
+
+    .role-toggle button {
+      flex: 1;
+      padding: 12px;
+      border: none;
+      background-color: #f8f9fa;
+      color: #555;
+      font-size: 16px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+
+    .role-toggle button.active {
+      background-color: #1a73e8;
+      color: white;
+    }
+
+    .form-field {
+      margin-bottom: 15px;
+    }
+
+    label {
+      font-weight: 500;
+      font-size: 14px;
+      display: block;
+      margin-bottom: 5px;
+      color: #333;
+    }
+
+    input, select, textarea {
+      width: 100%;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+
+    textarea {
+      resize: vertical;
+      min-height: 80px;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+
+    .full-width {
+      grid-column: 1 / -1;
+    }
+
+    button[type="submit"] {
+      width: 100%;
+      padding: 14px;
+      background-color: #28a745;
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.3s ease;
+    }
+
+    button[type="submit"]:disabled {
+      background-color: #94dcb0;
+      cursor: not-allowed;
+    }
+
+    .footer-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+
+    .footer-link a {
+      color: #1a73e8;
+      text-decoration: none;
+      font-weight: 500;
+    }
+
+    .spinner {
+      display: none;
+      text-align: center;
+      margin-top: 15px;
+    }
+
+    .spinner.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h2>Create an Account</h2>
+    <div class="role-toggle">
+      <button id="user-role-btn" class="active" onclick="setRole('user')">Register as User</button>
+      <button id="caterer-role-btn" onclick="setRole('caterer')">Register as Caterer</button>
+    </div>
+
+    <form id="user-register-form">
+      <div class="form-field"><label for="userFullName">Full Name</label><input type="text" id="userFullName" required></div>
+      <div class="form-grid">
+        <div class="form-field"><label for="userEmail">Email</label><input type="email" id="userEmail" required></div>
+        <div class="form-field"><label for="userPassword">Password</label><input type="password" id="userPassword" required></div>
+      </div>
+      <div class="form-field"><label for="userAddress">Address</label><input type="text" id="userAddress" required></div>
+      <div class="form-grid">
+        <div class="form-field"><label for="userPhone">Phone</label><input type="tel" id="userPhone"></div>
+        <div class="form-field"><label for="userProfilePic">Profile Picture</label><input type="file" id="userProfilePic" accept="image/*"></div>
+      </div>
+      <button type="submit">Create User Account</button>
+      <div class="spinner" id="loadingSpinner">Uploading image... Please wait</div>
+    </form>
+
+    <form id="caterer-register-form" style="display: none;">
+      <p>Coming Soon...</p>
+    </form>
+
+    <div class="footer-link">
+      <a href="index.html">Already have an account? Login</a>
+    </div>
+  </div>
+
+<script type="module">
+import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-app.js";
+import { getAuth, createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-auth.js";
+import { getFirestore, doc, setDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-firestore.js";
+import { getStorage, ref, uploadBytesResumable, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.10/firebase-storage.js";
+// Import the database instance from your firebase config file
+//import { db } from './firebase.js';
+const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+const app = initializeApp(firebaseConfig);
+const auth = getAuth(app);
+const db = getFirestore(app);
+const storage = getStorage(app);
+
+let selectedRole = "user";
+function setRole(role) {
+  selectedRole = role;
+  document.getElementById("user-role-btn").classList.toggle("active", role === "user");
+  document.getElementById("caterer-role-btn").classList.toggle("active", role === "caterer");
+  document.getElementById("user-register-form").style.display = role === "user" ? "block" : "none";
+  document.getElementById("caterer-register-form").style.display = role === "caterer" ? "block" : "none";
+}
+window.setRole = setRole;
+
+const userForm = document.getElementById("user-register-form");
+const spinner = document.getElementById("loadingSpinner");
+
+userForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+
+  const email = document.getElementById("userEmail").value.trim();
+  const password = document.getElementById("userPassword").value.trim();
+  const fullName = document.getElementById("userFullName").value.trim();
+  const phone = document.getElementById("userPhone").value.trim();
+  const address = document.getElementById("userAddress").value.trim();
+  const profileImage = document.getElementById("userProfilePic").files[0];
+
+  if (!email || !password || !fullName || !address) {
+    alert("Please fill in all required fields.");
+    return;
+  }
+
+  try {
+    spinner.classList.add("show");
+
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+    let imageUrl = "";
+
+    if (profileImage) {
+      const imagePath = `profile_pics/${user.uid}/${Date.now()}_${profileImage.name}`;
+      const imageRef = ref(storage, imagePath);
+      const uploadTask = uploadBytesResumable(imageRef, profileImage);
+
+      await new Promise((resolve, reject) => {
+        uploadTask.on('state_changed', null, reject, async () => {
+          imageUrl = await getDownloadURL(uploadTask.snapshot.ref);
+          resolve();
+        });
+      });
+    }
+
+    await setDoc(doc(db, "users", user.uid), {
+      fullName,
+      phone,
+      address,
+      imageUrl,
+      email,
+      createdAt: serverTimestamp()
+    });
+
+    alert("Registration successful!");
+    window.location.href = "index.html";
+  } catch (error) {
+    console.error("Registration failed:", error);
+    alert("Registration failed: " + error.message);
+  } finally {
+    spinner.classList.remove("show");
+  }
+});
+</script>
+</body>
+</html>

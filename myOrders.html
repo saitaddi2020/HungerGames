@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>My Orders</title>
+    <style>
+        body { font-family: 'Segoe UI', sans-serif; background-color: #f4f6f8; }
+        .order-card { background: #fff; padding: 20px; margin: 15px auto; border-left: 5px solid #007bff; border-radius: 8px; max-width: 600px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+        .order-card button { margin-top: 10px; padding: 8px 15px; border: none; background: #dc3545; color: white; border-radius: 5px; cursor: pointer; transition: background-color 0.2s; }
+        .order-card button:hover:not(:disabled) { background: #c82333; }
+        .order-card button:disabled { background: #6c757d; cursor: not-allowed; }
+        .status { font-weight: bold; padding: 3px 8px; border-radius: 12px; color: white; font-size: 0.9em; }
+        .status-Pending { background-color: #ffc107; color: #333; }
+        .status-Confirmed { background-color: #17a2b8; }
+        .status-Delivered { background-color: #28a745; }
+        .status-Cancelled { background-color: #6c757d; }
+    </style>
+</head>
+<body>
+    <h2>My Orders</h2>
+    <div id="orderList"><p>Loading your orders...</p></div>
+
+   <!-- KEEP THIS SCRIPT BLOCK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+        const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+        
+        const { initializeApp } = firebase;
+        const { getAuth, onAuthStateChanged } = firebase.auth;
+        const { getFirestore, collection, query, where, orderBy, getDocs, doc, updateDoc } = firebase.firestore;
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        onAuthStateChanged(auth, user => {
+            if (user) {
+                loadOrders(user.uid);
+            } else {
+                alert("Please log in to view your orders.");
+                window.location.href = "index.html";
+            }
+        });
+
+        async function loadOrders(userId) {
+            const orderListDiv = document.getElementById("orderList");
+            const q = query(collection(db, "orders"), where("userId", "==", userId), orderBy("timestamp", "desc"));
+            
+            try {
+                const snapshot = await getDocs(q);
+                if (snapshot.empty) {
+                    orderListDiv.innerHTML = "<p>You haven't placed any orders yet.</p>";
+                    return;
+                }
+
+                orderListDiv.innerHTML = ''; // Clear loading message
+                snapshot.forEach(doc => {
+                    const order = doc.data();
+                    const orderCard = createOrderCard(doc.id, order);
+                    orderListDiv.appendChild(orderCard);
+                });
+
+            } catch (error) {
+                console.error("Error fetching orders:", error);
+                orderListDiv.innerHTML = "<p>Failed to load orders. Please try again.</p>";
+            }
+        }
+        
+        function createOrderCard(id, data) {
+            const card = document.createElement('div');
+            card.className = 'order-card';
+            card.id = `order-${id}`;
+
+            const status = data.status || "Pending";
+            const isCancelable = status === "Pending";
+            const timestamp = data.timestamp?.toDate().toLocaleString() || "Unknown";
+
+            card.innerHTML = `
+                <h3>${data.productName}</h3>
+                <p>Price: ₹${data.price}</p>
+                <p>Status: <span class="status status-${status}">${status}</span></p>
+                <p>Ordered on: ${timestamp}</p>
+                <button onclick="cancelOrder('${id}')" ${!isCancelable ? "disabled" : ""}>Cancel Order</button>
+            `;
+            return card;
+        }
+
+        async function cancelOrder(orderId) {
+            const orderCard = document.getElementById(`order-${orderId}`);
+            const cancelButton = orderCard.querySelector('button');
+
+            if (cancelButton.disabled) {
+                return alert("This order can no longer be cancelled.");
+            }
+            
+            if (!confirm("Are you sure you want to cancel this order?")) return;
+            
+            cancelButton.disabled = true;
+            cancelButton.textContent = 'Cancelling...';
+
+            try {
+                const orderRef = doc(db, "orders", orderId);
+                await updateDoc(orderRef, { status: "Cancelled" });
+
+                // Update UI dynamically
+                orderCard.querySelector('.status').textContent = 'Cancelled';
+                orderCard.querySelector('.status').className = 'status status-Cancelled';
+                alert("Order successfully cancelled.");
+            } catch (error) {
+                alert("Error cancelling order: " + error.message);
+                cancelButton.disabled = false;
+                cancelButton.textContent = 'Cancel Order';
+            }
+        }
+    </script>
+</body>
+</html>

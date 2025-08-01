@@ -1,0 +1,48 @@
+rules_version = '2';
+service firebase.storage {
+  match /b/{bucket}/o {
+
+    // 🧁 PRODUCTS — Only approved caterers and Super Admin can upload
+    match /products/{filename} {
+      allow read: if true;
+      allow write: if isApprovedCaterer() || isSuperAdmin();
+    }
+
+    // 🏪 SHOP IMAGES — Caterers can upload their own shop images
+    match /shop_images/{userId}/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+                   (request.auth.uid == userId || isSuperAdmin());
+    }
+
+    // 📢 BANNERS — Only Super Admin can upload
+    match /banners/{filename} {
+      allow read: if true;
+      allow write: if isSuperAdmin();
+    }
+
+    // 🧍 USER PROFILE PICS — Each user can write to their own
+    match /profile_pics/{userId}/{filename} {
+      allow read: if true;
+      allow write: if request.auth != null &&
+                   (request.auth.uid == userId || isSuperAdmin());
+    }
+
+    // 🚫 Block all other unspecified paths
+    match /{allOtherPaths=**} {
+      allow read, write: if false;
+    }
+  }
+}
+
+// ✅ Allow only if user is an approved admin in 'admins' collection
+function isApprovedCaterer() {
+  return request.auth != null &&
+         get(/databases/(default)/documents/admins/$(request.auth.uid)).data.approved == true;
+}
+
+// ✅ Allow if user is the Super Admin
+function isSuperAdmin() {
+  return request.auth != null &&
+         request.auth.token.email == "saitaddi1432@gmail.com";
+}

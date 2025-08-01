@@ -1,0 +1,543 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>User Dashboard</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    :root {
+      --primary: #ff7043;
+      --bg: #f9f9fb;
+      --card-bg: #fff;
+      --border: #f1f1f6;
+      --accent: #30b47c;
+      --danger: #ee4747;
+      --shadow: 0 0 16px 0 #0001;
+      --radius: 14px;
+      --gray: #617184;
+      --nav-bg: #fff;
+      --nav-active: #ff7043;
+    }
+    body {
+      background: var(--bg);
+      font-family: 'Segoe UI', 'Arial', sans-serif;
+      margin: 0;
+      color: #282c37;
+    }
+    .dashboard-container {
+      max-width: 960px;
+      margin: 32px auto;
+      background: var(--card-bg);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+      min-height: 80vh;
+    }
+    .tabs {
+      display: flex;
+      background: var(--nav-bg);
+      border-bottom: 1px solid var(--border);
+    }
+    .tab {
+      flex: 1;
+      padding: 16px;
+      text-align: center;
+      cursor: pointer;
+      font-weight: 500;
+      color: var(--gray);
+      transition: background .16s, color .16s;
+    }
+    .tab.active {
+      color: var(--nav-active);
+      border-bottom: 3px solid var(--nav-active);
+      background: #fff8f6;
+    }
+    .tab:not(.active):hover {
+      background: #faf3f1;
+    }
+    .section {
+      display: none;
+      padding: 32px 24px 24px 24px;
+      min-height: 360px;
+      animation: fade-in .4s;
+    }
+    .section.active { display: block; }
+
+    /* PROFILE */
+    .profile-box {
+      display: flex;
+      align-items: center;
+      gap: 28px;
+      margin-bottom: 32px;
+    }
+    .profile-pic {
+      width: 92px;
+      height: 92px;
+      border-radius: 50%;
+      object-fit: cover;
+      border: 3px solid var(--primary);
+      box-shadow: 0 1px 12px #fae1d7;
+      background: #feece3;
+    }
+    .user-details {
+      font-size: 1.15rem;
+    }
+
+    /* SHOPS */
+    .filters-bar {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 28px;
+    }
+    .filter, .search-input {
+      padding: 0.65em 1.1em;
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      background: #f5f6fa;
+      font-size: 1em;
+      outline: none;
+      transition: border .14s;
+    }
+    .search-input:focus { border-color: var(--primary); }
+    #shop-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit,minmax(268px,1fr));
+      gap: 20px;
+    }
+    .shop-card {
+      text-decoration: none;
+      display: block;
+      background: #fff;
+      border-radius: var(--radius);
+      box-shadow: 0 0 8px 0 #e8e5e5;
+      overflow: hidden;
+      transition: box-shadow .15s, transform .09s;
+      color: inherit;
+      position: relative;
+      min-height: 280px;
+    }
+    .shop-card:hover, .shop-card:focus {
+      box-shadow: 0 2px 24px #ff704321;
+      transform: translateY(-3px) scale(1.04);
+    }
+    .shop-card img {
+      width: 100%;
+      height: 148px;
+      object-fit: cover;
+      background: #f7f7f7;
+      display: block;
+    }
+    .shop-card-content {
+      padding: 18px 15px 12px;
+    }
+    .shop-card-content h3 {
+      margin: 0 0 4px;
+      color: var(--primary);
+      font-size: 1.12em;
+    }
+    .shop-card-content p {
+      margin: 0 0 8px;
+      color: #4d5c6b;
+      font-size: 0.99em;
+    }
+    .category-tag {
+      background: #ffe9e2;
+      color: #e65b2c;
+      font-size: 0.97em;
+      padding: 3px 10px;
+      border-radius: 12px;
+      display: inline-block;
+      margin-top: 4px;
+      letter-spacing: .04em;
+    }
+    .empty-state { padding: 18px; text-align: center; color: #bbb; }
+
+    /* CART */
+    .cart-list { margin-top: 14px; }
+    .cart-item {
+      background: #fbf6f4;
+      border: 1px solid #ffe0d4;
+      border-radius: var(--radius);
+      padding: 10px 14px;
+      margin-bottom: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-size: 1em;
+      color: #b05627;
+    }
+    .cart-empty {
+      color: #b98160;
+      margin-top: 24px;
+      text-align: center;
+      font-size: 1.12em;
+    }
+    .place-order-btn {
+      margin: 24px 0 0 0;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 11px;
+      padding: 11px 32px;
+      font-size: 1.09em;
+      font-weight: 500;
+      cursor: pointer;
+      letter-spacing: .03em;
+      box-shadow: 0 1px 6px #fc724216;
+      transition: background .18s;
+    }
+    .place-order-btn:active, .place-order-btn:focus { background: #d95423; }
+    .cart-total { margin: 18px 0 0; text-align: right; color: #da501d; font-size: 1.05em; }
+
+    /* ORDER HISTORY */
+    .order-item {
+      background: #f8f5fc;
+      border: 1px solid #eae0fc;
+      border-radius: var(--radius);
+      padding: 15px 14px 10px;
+      margin-bottom: 13px;
+      color: #633fa9;
+    }
+    .order-status {
+      font-style: italic;
+      color: #fba32c;
+    }
+    .order-date {
+      color: #7d7098;
+      font-size: .98em;
+      margin: 0 0 6px 0;
+    }
+
+    /* TOAST NOTIFICATION */
+    .toast {
+      position: fixed;
+      bottom: 36px;
+      left: 50%;
+      transform: translateX(-50%);
+      min-width: 220px;
+      max-width: 320px;
+      background: #2e2e2e;
+      color: #fff;
+      border-radius: 8px;
+      padding: 16px 22px;
+      font-size: 1.03em;
+      box-shadow: 0 1px 16px #2e2e2e49;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      z-index: 99999;
+      transition: opacity .35s, bottom .35s;
+    }
+    .toast.show {
+      opacity: 1;
+      visibility: visible;
+      bottom: 68px;
+      pointer-events: all;
+    }
+
+    /* Small screens */
+    @media (max-width: 700px) {
+      .dashboard-container { margin: 0; border-radius: 0; }
+      .section { padding: 18px 7vw 10vw 7vw; }
+      .shop-card img { height: 110px; }
+      .profile-box { gap: 12px; }
+      .profile-pic { width: 65px; height: 65px; }
+    }
+    @keyframes fade-in { from { opacity: 0; transform: translateY(30px);} to { opacity:1; transform:none; } }
+  </style>
+</head>
+<body>
+  <div class="dashboard-container">
+    <div class="tabs">
+      <div class="tab active" data-section="profile">Profile</div>
+      <div class="tab" data-section="shops">Shops</div>
+      <div class="tab" data-section="cart">Cart</div>
+      <div class="tab" data-section="orders">Orders</div>
+    </div>
+
+    <!-- PROFILE -->
+    <div class="section active" id="profile-section">
+      <div class="profile-box">
+        <img id="userProfilePic" src="https://placehold.co/100x100/FF6F61/FFFFFF?text=User" alt="Profile Picture" class="profile-pic" />
+        <div class="user-details">
+          <div id="userFullName" style="font-weight: 500;font-size:1.18em;"></div>
+          <div id="userEmail" style="color:var(--gray);margin-top:2px"></div>
+        </div>
+      </div>
+      <button class="place-order-btn" style="background:#644baa; margin-top:16px;" onclick="logout()">Logout</button>
+    </div>
+
+    <!-- SHOPS -->
+    <div class="section" id="shops-section">
+      <div class="filters-bar">
+        <input class="search-input" id="search-input" autocomplete="off" placeholder="Search caterers...">
+        <select class="filter" id="category-filter">
+          <option value="all">All Categories</option>
+          <option value="veg">Veg</option>
+          <option value="non-veg">Non-Veg</option>
+        </select>
+      </div>
+      <div id="shop-grid"></div>
+    </div>
+
+    <!-- CART -->
+    <div class="section" id="cart-section">
+      <h3 style="margin-top:0;">Your Cart</h3>
+      <div id="cart-items" class="cart-list"></div>
+      <div class="cart-total" id="cart-total"></div>
+      <button class="place-order-btn" onclick="placeOrder()">Place Order</button>
+    </div>
+
+    <!-- ORDERS -->
+    <div class="section" id="orders-section">
+      <h3 style="margin-top:0;">Order History</h3>
+      <div id="order-history"></div>
+    </div>
+  </div>
+
+  <div class="toast" id="toast"></div>
+
+  <!-- Firebase JS SDK v9+ modules -->
+  <script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import {
+      getFirestore, collection, query, where, onSnapshot, doc,
+      getDocs, deleteDoc, writeBatch, serverTimestamp,
+      getDoc, orderBy
+    } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+     // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+    // === FIREBASE CONFIG ===
+    const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    // === STATE ===
+    let currentUser = null;
+    let allCaterers = [];
+    let lastCartItems = [];
+    let cartUnsubscribe = null;
+
+    // === TAB NAV ===
+    const tabs = Array.from(document.querySelectorAll('.tab'));
+    const sections = {
+      profile: document.getElementById('profile-section'),
+      shops: document.getElementById('shops-section'),
+      cart: document.getElementById('cart-section'),
+      orders: document.getElementById('orders-section')
+    };
+
+    tabs.forEach(tab => {
+      tab.addEventListener('click', function() {
+        tabs.forEach(t => t.classList.remove('active'));
+        this.classList.add('active');
+        Object.values(sections).forEach(s => s.classList.remove('active'));
+        sections[this.dataset.section].classList.add('active');
+      });
+    });
+
+    // === TOAST ===
+    function showToast(msg) {
+      const toast = document.getElementById('toast');
+      toast.textContent = msg;
+      toast.classList.add('show');
+      setTimeout(() => toast.classList.remove('show'), 2100);
+    }
+
+    // === AUTH HANDLING ===
+    onAuthStateChanged(auth, user => {
+      if (user) {
+        currentUser = user;
+        loadUserProfile();
+        loadCaterers();
+        loadOrderHistory();
+        listenForCartUpdates();
+      } else {
+        window.location.href = 'index.html';
+      }
+    });
+
+    // === PROFILE ===
+    async function loadUserProfile() {
+      const userDocRef = doc(db, "users", currentUser.uid);
+      const userDoc = await getDoc(userDocRef);
+      if (userDoc.exists()) {
+        const userData = userDoc.data();
+        document.getElementById('userFullName').textContent = userData.fullName || '';
+        document.getElementById('userEmail').textContent = userData.email || '';
+        if (userData.profilePicUrl) {
+          document.getElementById('userProfilePic').src = userData.profilePicUrl;
+        }
+      }
+    }
+
+    // === SHOPS ===
+    async function loadCaterers() {
+      const caterersRef = collection(db, "admins");
+      const q = query(caterersRef, where("approved", "==", true));
+      const snapshot = await getDocs(q);
+      allCaterers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+      renderCaterers(allCaterers);
+    }
+
+    function renderCaterers(caterers) {
+      const grid = document.getElementById('shop-grid');
+      grid.innerHTML = '';
+      if (caterers.length === 0) {
+        grid.innerHTML = '<p class="empty-state">No caterers found.</p>';
+        return;
+      }
+      caterers.forEach(caterer => {
+        const card = document.createElement('a');
+        card.className = 'shop-card';
+        card.href = `shop_profile.html?username=${encodeURIComponent(caterer.businessName)}`;
+        card.innerHTML = `
+          <img src="${caterer.shopImageUrl || 'https://placehold.co/600x400/FF6F61/FFFFFF?text=Shop'}" alt="${caterer.businessName}">
+          <div class="shop-card-content">
+            <h3>${caterer.businessName}</h3>
+            <p>${caterer.description || ''}</p>
+            <span class="category-tag">${caterer.category || ''}</span>
+          </div>
+        `;
+        grid.appendChild(card);
+      });
+    }
+
+    document.getElementById('search-input').addEventListener('input', handleFilterChange);
+    document.getElementById('category-filter').addEventListener('change', handleFilterChange);
+
+    function handleFilterChange() {
+      const searchTerm = document.getElementById('search-input').value.toLowerCase();
+      const category = document.getElementById('category-filter').value;
+      const filtered = allCaterers.filter(caterer => {
+        const matchName = caterer.businessName?.toLowerCase().includes(searchTerm);
+        const matchCat = category === 'all' || caterer.category === category;
+        return matchName && matchCat;
+      });
+      renderCaterers(filtered);
+    }
+
+    // === CART ===
+    function listenForCartUpdates() {
+      if (cartUnsubscribe) cartUnsubscribe();
+      const cartQuery = query(collection(db, "cart"), where("userId", "==", currentUser.uid));
+      cartUnsubscribe = onSnapshot(cartQuery,
+        snapshot => {
+          const cartItems = [];
+          snapshot.forEach(doc => cartItems.push({ id: doc.id, ...doc.data() }));
+          lastCartItems = cartItems;
+          updateCartUI(cartItems);
+        },
+        err => {
+          showToast("Cart error: " + err.message);
+        }
+      );
+    }
+
+    window.placeOrder = async function () {
+      if (!lastCartItems.length) {
+        showToast("Your cart is empty.");
+        return;
+      }
+      const batch = writeBatch(db);
+      const items = [];
+      const caterers = new Set();
+      const cartQuery = query(collection(db, "cart"), where("userId", "==", currentUser.uid));
+      const cartSnapshot = await getDocs(cartQuery);
+
+      cartSnapshot.forEach(docSnap => {
+        const item = docSnap.data();
+        items.push(item);
+        caterers.add(item.catererId);
+        batch.delete(docSnap.ref);
+      });
+
+      const total = items.reduce((sum, itm) => sum + (itm.price || 0) * (itm.quantity || 1), 0);
+
+      const orderRef = doc(collection(db, "orders"));
+      batch.set(orderRef, {
+        userId: currentUser.uid,
+        items: items,
+        catererIds: Array.from(caterers),
+        totalPrice: total,
+        status: "Pending",
+        timestamp: serverTimestamp()
+      });
+
+      try {
+        await batch.commit();
+        showToast("Order placed successfully!");
+      } catch (e) {
+        showToast("Order failed: " + (e.message || e));
+      }
+    };
+
+    function updateCartUI(cartItems) {
+      const cartDiv = document.getElementById('cart-items');
+      cartDiv.innerHTML = '';
+      if (cartItems.length === 0) {
+        cartDiv.innerHTML = `<div class="cart-empty">Cart is empty.<br>Add items from caterer shops!</div>`;
+        document.getElementById('cart-total').textContent = "";
+        return;
+      }
+      cartDiv.innerHTML = cartItems.map(item => `
+        <div class="cart-item">
+          <span>${item.productName}</span>
+          <span>
+            ₹${item.price || 0} × ${item.quantity || 1}
+          </span>
+        </div>
+      `).join('');
+      const sum = cartItems.reduce((a, i) => a + (i.price || 0) * (i.quantity || 1), 0);
+      document.getElementById('cart-total').textContent = `Total: ₹${sum}`;
+    }
+
+    // === ORDERS ===
+    async function loadOrderHistory() {
+      const ordersRef = collection(db, "orders");
+      const q = query(ordersRef, where("userId", "==", currentUser.uid), orderBy("timestamp", "desc"));
+      const snapshot = await getDocs(q);
+
+      const historyDiv = document.getElementById('order-history');
+      historyDiv.innerHTML = '';
+      if (snapshot.empty) {
+        historyDiv.innerHTML = '<div class="cart-empty">No orders yet.</div>';
+        return;
+      }
+      snapshot.forEach(docSnap => {
+        const order = docSnap.data();
+        const time = order.timestamp && typeof order.timestamp.toDate === "function"
+          ? order.timestamp.toDate().toLocaleString()
+          : "";
+        const productsDisplay = order.items?.map(i => i.productName + ' ×' + (i.quantity || 1)).join(', ') || '';
+        const div = document.createElement('div');
+        div.className = 'order-item';
+        div.innerHTML = `
+          <div><strong>Order #<span>${docSnap.id.substring(0,6)}...</span></strong></div>
+          <div class="order-date">${time}</div>
+          <div><b>Items:</b> ${productsDisplay}</div>
+          <div><b>Total:</b> ₹${order.totalPrice || 0}</div>
+          <div class="order-status">Status: ${order.status}</div>
+        `;
+        historyDiv.appendChild(div);
+      });
+    }
+
+    // === LOGOUT ===
+    window.logout = function () {
+      signOut(auth);
+    };
+  </script>
+</body>
+</html>

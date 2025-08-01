@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Admin Shop Approval Panel</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f2f2f2;
+    }
+    header {
+      background-color: #1a73e8;
+      color: white;
+      padding: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    header h2 {
+      margin: 0;
+    }
+    header button {
+      background: red;
+      color: white;
+      border: none;
+      padding: 8px 15px;
+      cursor: pointer;
+      border-radius: 5px;
+    }
+    .container {
+      padding: 20px;
+    }
+    .shop-card {
+      background: white;
+      padding: 15px;
+      margin-bottom: 20px;
+      border-radius: 10px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+      display: flex;
+      gap: 15px;
+    }
+    .shop-card img {
+      width: 150px;
+      height: 100px;
+      object-fit: cover;
+      border-radius: 6px;
+    }
+    .shop-details {
+      flex-grow: 1;
+    }
+    .btn {
+      padding: 8px 12px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+    }
+    .approve-btn {
+      background-color: green;
+      color: white;
+    }
+    .reject-btn {
+      background-color: darkred;
+      color: white;
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <h2>Admin - Pending Shop Approvals</h2>
+    <button onclick="logout()">Logout</button>
+  </header>
+
+  <div class="container" id="shopList">
+    Loading shops...
+  </div>
+
+  <!-- Firebase SDKs -->
+ <!-- KEEP THIS SCRIPT BLOCK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+  
+    const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+    firebase.initializeApp(firebaseConfig);
+    const auth = firebase.auth();
+    const db = firebase.firestore();
+
+    // Logout function
+    function logout() {
+      auth.signOut().then(() => window.location.href = "index.html");
+    }
+
+    // Auth state check
+    auth.onAuthStateChanged(user => {
+      if (!user) {
+        window.location.href = "index.html";
+      } else {
+        loadPendingShops();
+      }
+    });
+
+    // Load unapproved shops
+    function loadPendingShops() {
+      db.collection("caterers").where("approved", "==", false).get().then(snapshot => {
+        const shopList = document.getElementById("shopList");
+        shopList.innerHTML = "";
+        if (snapshot.empty) {
+          shopList.innerHTML = "<p>No pending shops for approval.</p>";
+          return;
+        }
+
+        snapshot.forEach(doc => {
+          const shop = doc.data();
+          const shopCard = document.createElement("div");
+          shopCard.className = "shop-card";
+          shopCard.innerHTML = `
+            <img src="${shop.imageUrl}" alt="${shop.shopName}">
+            <div class="shop-details">
+              <h3>${shop.shopName}</h3>
+              <p><strong>Owner:</strong> ${shop.ownerName}</p>
+              <p><strong>Email:</strong> ${shop.email}</p>
+              <p><strong>Description:</strong> ${shop.shopDescription}</p>
+              <p><strong>Address:</strong> ${shop.address}</p>
+              <button class="btn approve-btn" onclick="approveShop('${doc.id}')">Approve</button>
+              <button class="btn reject-btn" onclick="rejectShop('${doc.id}')">Reject</button>
+            </div>
+          `;
+          shopList.appendChild(shopCard);
+        });
+      });
+    }
+
+    function approveShop(id) {
+      db.collection("caterers").doc(id).update({ approved: true }).then(() => {
+        alert("Shop approved!");
+        loadPendingShops();
+      });
+    }
+
+    function rejectShop(id) {
+      if (confirm("Are you sure you want to reject and delete this shop?")) {
+        db.collection("caterers").doc(id).delete().then(() => {
+          alert("Shop rejected and deleted.");
+          loadPendingShops();
+        });
+      }
+    }
+  </script>
+</body>
+</html>

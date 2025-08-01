@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Shop Profile</title>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@24,400,0,0&icon_names=storefront,mail,phone,location_on,add_shopping_cart,arrow_back" />
+    <style>
+        :root {
+            --primary-color: #ff6f61;
+            --secondary-color: #4a4a4a;
+            --background-color: #f8f9fa;
+            --surface-color: #ffffff;
+            --border-color: #e0e0e0;
+        }
+        body {
+            font-family: 'Segoe UI', sans-serif;
+            margin: 0;
+            background-color: var(--background-color);
+            color: var(--secondary-color);
+        }
+        .material-symbols-outlined { vertical-align: middle; margin-right: 8px; }
+
+        .shop-header {
+            height: 40vh;
+            background-size: cover;
+            background-position: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+            color: white;
+            position: relative;
+        }
+        .shop-header::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+        }
+        .header-content { position: relative; z-index: 1; }
+        .header-content h1 { font-size: 3em; margin: 0 0 10px; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
+        .header-content p { font-size: 1.2em; max-width: 600px; margin: 0 auto; }
+        
+        .back-link {
+            position: absolute;
+            top: 20px;
+            left: 20px;
+            z-index: 3;
+            color: white;
+            text-decoration: none;
+            font-weight: 600;
+            background: rgba(0,0,0,0.4);
+            padding: 8px 15px;
+            border-radius: 20px;
+            display: flex;
+            align-items: center;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: -80px auto 30px;
+            position: relative;
+            z-index: 2;
+            padding: 0 20px;
+            display: grid;
+            grid-template-columns: 1fr 3fr;
+            gap: 30px;
+            align-items: start;
+        }
+        .info-card, .menu-card {
+            background: var(--surface-color);
+            padding: 25px;
+            border-radius: 12px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        .info-card h2 { margin-top: 0; border-bottom: 1px solid var(--border-color); padding-bottom: 15px; margin-bottom: 20px; }
+        .info-item { display: flex; align-items: start; gap: 15px; margin-bottom: 15px; }
+        .info-item p { margin: 0; line-height: 1.6; }
+
+        #product-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 25px; }
+        .product-card { border: 1px solid var(--border-color); border-radius: 10px; overflow: hidden; display: flex; flex-direction: column; }
+        .product-card img { width: 100%; height: 150px; object-fit: cover; }
+        .product-content { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .product-content h3 { margin: 0 0 10px; font-size: 1.1em; }
+        .product-content p { margin: 0 0 15px; color: #757575; font-size: 0.9em; flex-grow: 1; }
+        .product-footer { display: flex; justify-content: space-between; align-items: center; }
+        .product-price { font-size: 1.2em; font-weight: 700; color: var(--primary-color); }
+        .add-to-cart-controls { display: flex; align-items: center; gap: 8px; }
+        .add-to-cart-controls input[type="number"] { width: 50px; padding: 8px; text-align: center; border: 1px solid var(--border-color); border-radius: 6px; }
+        .add-to-cart-btn { background-color: var(--primary-color); color: white; border: none; padding: 8px 12px; border-radius: 6px; cursor: pointer; display: flex; align-items: center; }
+        
+        /* Toast Notification */
+        #toast {
+            position: fixed; bottom: -100px; left: 50%; transform: translateX(-50%);
+            background-color: #333; color: white; padding: 15px 25px; border-radius: 8px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2); transition: bottom 0.5s ease; z-index: 2000;
+        }
+        #toast.show { bottom: 30px; }
+    </style>
+</head>
+<body>
+
+<a href="user.html" class="back-link"><span class="material-symbols-outlined">arrow_back</span> Back to Shops</a>
+<header class="shop-header" id="shop-header-bg">
+    <div class="header-content">
+        <h1 id="shopName">Loading...</h1>
+        <p id="shopDescription"></p>
+    </div>
+</header>
+
+<main class="container">
+    <aside class="info-card">
+        <h2><span class="material-symbols-outlined">storefront</span>Shop Info</h2>
+        <div class="info-item"><span class="material-symbols-outlined">mail</span><p><a id="shopEmail" href="#"></a></p></div>
+        <div class="info-item"><span class="material-symbols-outlined">phone</span><p><a id="shopPhone" href="#"></a></p></div>
+        <div class="info-item"><span class="material-symbols-outlined">location_on</span><p id="shopAddress"></p></div>
+    </aside>
+
+    <section class="menu-card">
+        <h2>Menu</h2>
+        <div id="product-grid"><p>Loading products...</p></div>
+    </section>
+</main>
+
+<div id="toast"></div>
+
+<script type="module">
+    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+    // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+    const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+    let currentUser = null;
+
+    onAuthStateChanged(auth, user => {
+        if (user) {
+            currentUser = user;
+        } else {
+            window.location.href = "index.html";
+        }
+    });
+
+    const params = new URLSearchParams(window.location.search);
+    const catererUsername = params.get("username");
+
+    if (!catererUsername) {
+        alert("No shop selected!");
+        window.location.href = "user.html";
+    } else {
+        loadShopAndProducts(catererUsername);
+    }
+
+    async function loadShopAndProducts(username) {
+        try {
+            const caterersRef = collection(db, "admins");
+            const qShop = query(caterersRef, where("businessName", "==", username), where("approved", "==", true));
+            const shopSnapshot = await getDocs(qShop);
+
+            if (shopSnapshot.empty) throw new Error("Shop not found or not approved.");
+            
+            const catererData = shopSnapshot.docs[0].data();
+            
+            document.getElementById("shop-header-bg").style.backgroundImage = `url(${catererData.shopImageUrl})`;
+            document.getElementById("shopName").textContent = catererData.businessName;
+            document.getElementById("shopDescription").textContent = catererData.description;
+            // ... (populate other shop details)
+
+            const productsRef = collection(db, "products");
+            const qProducts = query(productsRef, where("catererUsername", "==", username), where("approved", "==", true));
+            const productsSnapshot = await getDocs(qProducts);
+            
+            const productGrid = document.getElementById("product-grid");
+            productGrid.innerHTML = "";
+            if (productsSnapshot.empty) {
+                productGrid.innerHTML = "<p>This caterer hasn't listed any products yet.</p>";
+                return;
+            }
+
+            productsSnapshot.forEach(doc => {
+                const product = doc.data();
+                const card = document.createElement("div");
+                card.className = "product-card";
+                card.innerHTML = `
+                    <img src="${product.imageUrl}" alt="${product.name}">
+                    <div class="product-content">
+                        <h3>${product.name}</h3>
+                        <p>${product.description || ''}</p>
+                        <div class="product-footer">
+                            <span class="product-price">₹${product.price.toFixed(2)}</span>
+                            <div class="add-to-cart-controls">
+                                <input type="number" value="1" min="1" id="qty-${doc.id}">
+                                <button class="add-to-cart-btn" onclick="addToCart(this, '${doc.id}', '${product.name}', ${product.price}, '${product.catererUsername}', '${product.catererId}')">
+                                    <span class="material-symbols-outlined">add_shopping_cart</span>
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+                productGrid.appendChild(card);
+            });
+
+        } catch (error) {
+            alert(error.message);
+            window.location.href = "user.html";
+        }
+    }
+
+    // ✨ UPDATED Add to Cart Functionality with Quantity
+    window.addToCart = async function(button, productId, name, price, catererUsername, catererId) {
+        if (!currentUser) return alert("Please log in first!");
+        
+        const quantityInput = document.getElementById(`qty-${productId}`);
+        const quantity = parseInt(quantityInput.value, 10);
+
+        if (isNaN(quantity) || quantity < 1) {
+            return showToast("Please enter a valid quantity.", "error");
+        }
+
+        button.disabled = true;
+
+        try {
+            const cartRef = collection(db, "cart");
+            const q = query(cartRef, where("userId", "==", currentUser.uid), where("productId", "==", productId));
+            const snapshot = await getDocs(q);
+
+            if (snapshot.empty) {
+                // Item is not in the cart, add it as a new document
+                await addDoc(cartRef, {
+                    userId: currentUser.uid,
+                    productId, name, price, catererUsername, catererId, quantity,
+                    timestamp: serverTimestamp()
+                });
+            } else {
+                // Item already exists, update its quantity
+                const existingDocRef = snapshot.docs[0].ref;
+                await updateDoc(existingDocRef, {
+                    quantity: increment(quantity)
+                });
+            }
+            showToast(`${quantity} x '${name}' added to your cart!`);
+        } catch (error) {
+            console.error("Error adding to cart: ", error);
+            showToast("Could not add item to cart.", "error");
+        } finally {
+            button.disabled = false;
+        }
+    }
+
+    // Toast notification function
+    function showToast(message, type = "success") {
+        const toast = document.getElementById("toast");
+        toast.textContent = message;
+        toast.style.backgroundColor = type === "error" ? "#d93025" : "#333";
+        toast.classList.add("show");
+        setTimeout(() => {
+            toast.classList.remove("show");
+        }, 3000);
+    }
+</script>
+</body>
+</html>

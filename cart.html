@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Cart</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <h2>My Cart</h2>
+  <div id="cartItems"></div>
+  <button onclick="placeOrderFromCart()">Place Order</button>
+<!-- KEEP THIS SCRIPT BLOCK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+    // Your web app's Firebase configuration
+    const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+    // Initialize Firebase
+    const { initializeApp } = firebase;
+    const { getAuth, onAuthStateChanged } = firebase.auth;
+    const { getFirestore, collection, query, where, getDocs, writeBatch, doc, serverTimestamp } = firebase.firestore;
+    
+    const app = initializeApp(firebaseConfig);
+    const auth = getAuth(app);
+    const db = getFirestore(app);
+
+    async function placeOrderFromCart() {
+      const user = auth.currentUser;
+      if (!user) {
+        alert("Please login first.");
+        return;
+      }
+
+      const cartCollectionRef = collection(db, "cart");
+      const q = query(cartCollectionRef, where("userId", "==", user.uid));
+
+      try {
+        const snapshot = await getDocs(q);
+        if (snapshot.empty) {
+          alert("Your cart is empty.");
+          return;
+        }
+
+        const batch = writeBatch(db);
+        snapshot.forEach(cartDoc => {
+          const cartItem = cartDoc.data();
+          const orderRef = doc(collection(db, "orders")); // Create a new order document reference
+          
+          batch.set(orderRef, {
+            userId: user.uid,
+            productId: cartItem.productId,
+            productName: cartItem.productName,
+            price: cartItem.price,
+            status: "Pending",
+            timestamp: serverTimestamp()
+          });
+
+          batch.delete(cartDoc.ref); // Delete the item from the cart
+        });
+
+        await batch.commit();
+        alert("Order placed successfully!");
+        // You would typically reload or clear the cart display here
+        document.getElementById("cartItems").innerHTML = "<p>Cart is now empty.</p>";
+
+      } catch (error) {
+        console.error("Error placing order: ", error);
+        alert("Error placing order: " + error.message);
+      }
+    }
+    
+    // You would add code here to display cart items when the page loads
+  </script>
+</body>
+</html>

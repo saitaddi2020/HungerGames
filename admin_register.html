@@ -1,0 +1,166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>Admin Registration</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      margin: 0;
+      padding: 0;
+      background: linear-gradient(to right, #6a11cb, #2575fc);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      height: 100vh;
+    }
+    .register-box {
+      background: #fff;
+      padding: 30px;
+      border-radius: 12px;
+      max-width: 400px;
+      width: 100%;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+      animation: fadeIn 0.6s ease-out;
+    }
+    @keyframes fadeIn {
+      from { transform: translateY(30px); opacity: 0; }
+      to { transform: translateY(0); opacity: 1; }
+    }
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+    input {
+      width: 100%;
+      padding: 12px;
+      margin: 10px 0;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 15px;
+      transition: border-color 0.2s;
+    }
+    input:focus {
+      border-color: #1a73e8;
+      outline: none;
+    }
+    button {
+      width: 100%;
+      padding: 12px;
+      background-color: #1a73e8;
+      color: white;
+      border: none;
+      font-size: 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 10px;
+      transition: background-color 0.3s;
+    }
+    button:hover {
+      background-color: #155ec9;
+    }
+    .loading {
+      display: none;
+      text-align: center;
+      font-size: 14px;
+      color: #555;
+      margin-top: 10px;
+    }
+    .message {
+      text-align: center;
+      font-size: 14px;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+    .message.success { color: green; }
+    .message.error { color: red; }
+    @media screen and (max-width: 500px) {
+      .register-box {
+        margin: 0 20px;
+        padding: 25px;
+      }
+    }
+  </style>
+</head>
+<body>
+
+<div class="register-box">
+  <h2>Admin Registration</h2>
+  <input type="text" id="adminUsername" placeholder="Username" />
+  <input type="email" id="adminEmail" placeholder="Email" />
+  <input type="password" id="adminPassword" placeholder="Password" />
+  <button onclick="registerAdmin()">Register</button>
+  <div class="loading" id="loading">⏳ Registering...</div>
+  <p class="message" id="message"></p>
+</div>
+
+<!-- Firebase SDKs -->
+<!-- KEEP THIS SCRIPT BLOCK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getAuth,createUserWithEmailAndPassword } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+  
+  const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+  firebase.initializeApp(firebaseConfig);
+  const auth = firebase.auth();
+  const db = firebase.firestore();
+
+  function registerAdmin() {
+    const username = document.getElementById('adminUsername').value.trim();
+    const email = document.getElementById('adminEmail').value.trim();
+    const password = document.getElementById('adminPassword').value.trim();
+    const message = document.getElementById('message');
+    const loading = document.getElementById('loading');
+
+    if (!username || !email || !password) {
+      message.textContent = "❌ Please fill all fields.";
+      message.className = "message error";
+      return;
+    }
+
+    loading.style.display = "block";
+    message.textContent = "";
+
+    auth.createUserWithEmailAndPassword(email, password)
+      .then(cred => {
+        const data = {
+          email,
+          username,
+          approved: false,
+          timestamp: firebase.firestore.FieldValue.serverTimestamp()
+        };
+        return db.collection('admins').doc(cred.user.uid).set(data);
+      })
+      .then(() => {
+        loading.style.display = "none";
+        message.textContent = "✅ Registration successful. Awaiting Super Admin approval.";
+        message.className = "message success";
+
+        document.getElementById('adminUsername').value = '';
+        document.getElementById('adminEmail').value = '';
+        document.getElementById('adminPassword').value = '';
+      })
+      .catch(error => {
+        loading.style.display = "none";
+        message.textContent = "❌ " + error.message;
+        message.className = "message error";
+      });
+  }
+</script>
+
+</body>
+</html>

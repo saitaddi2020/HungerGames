@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Manage Orders - Admin</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <h2>All Orders</h2>
+  <div id="adminOrderList"></div>
+
+  <!-- KEEP THIS SCRIPT BLOCK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  // ... and the rest of your code
+
+ 
+
+    const db = firebase.firestore();
+
+    db.collection("orders").orderBy("timestamp", "desc").get().then(snapshot => {
+      let html = '';
+      snapshot.forEach(doc => {
+        const data = doc.data();
+        html += `
+          <div class="order-card">
+            <h3>${data.productName}</h3>
+            <p>User: ${data.userId}</p>
+            <p>Price: ₹${data.price}</p>
+            <p>Status: 
+              <select onchange="updateStatus('${doc.id}', this.value)">
+                <option value="Pending" ${data.status === "Pending" ? "selected" : ""}>Pending</option>
+                <option value="Processing" ${data.status === "Processing" ? "selected" : ""}>Processing</option>
+                <option value="Delivered" ${data.status === "Delivered" ? "selected" : ""}>Delivered</option>
+                <option value="Cancelled" ${data.status === "Cancelled" ? "selected" : ""}>Cancelled</option>
+              </select>
+            </p>
+            <p>Ordered On: ${new Date(data.timestamp?.toDate()).toLocaleString()}</p>
+          </div>
+        `;
+      });
+      document.getElementById("adminOrderList").innerHTML = html;
+    });
+
+    function updateStatus(orderId, status) {
+      db.collection("orders").doc(orderId).update({ status })
+        .then(() => alert("Order status updated"))
+        .catch(err => alert("Error: " + err.message));
+    }
+  </script>
+   <script src="firebase-config.js"></script>
+</body>
+</html>

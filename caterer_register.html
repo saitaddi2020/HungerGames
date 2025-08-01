@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Caterer Registration</title>
+  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI&display=swap" rel="stylesheet">
+  <style>
+    body {
+      font-family: 'Segoe UI', sans-serif;
+      background: #f5f5f5;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 40px 0;
+    }
+
+    .register-container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      width: 400px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+    }
+
+    h2 {
+      text-align: center;
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    input, textarea {
+      width: 100%;
+      padding: 10px;
+      margin-bottom: 12px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    input[type="file"] {
+      padding: 5px;
+    }
+
+    button {
+      width: 100%;
+      background-color: #ff7043;
+      color: white;
+      padding: 10px;
+      border: none;
+      border-radius: 6px;
+      font-size: 16px;
+      cursor: pointer;
+    }
+
+    button:hover {
+      background-color: #f4511e;
+    }
+
+    .success {
+      color: green;
+      text-align: center;
+      font-weight: bold;
+      margin-top: 10px;
+    }
+  </style>
+</head>
+<body>
+
+<div class="register-container">
+  <h2>Caterer Registration</h2>
+  <form id="catererForm">
+    <input type="text" id="ownerName" placeholder="Owner Full Name" required />
+    <input type="text" id="shopName" placeholder="Catering Business Name" required />
+    <input type="text" id="username" placeholder="Unique Username" required />
+    <input type="tel" id="phone" placeholder="Contact Number" required />
+    <input type="email" id="email" placeholder="Business Email" required />
+    <textarea id="address" rows="3" placeholder="Business Address" required></textarea>
+    <textarea id="shopDescription" rows="3" placeholder="Short Description (Cuisine, Specialties)" required></textarea>
+    <input type="file" id="shopImage" accept="image/*" required />
+    <button type="submit">Register Caterer</button>
+    <div class="success" id="successMessage"></div>
+  </form>
+</div>
+
+<!-- Firebase SDKs -->
+<!-- KEEP THIS SCRIPT BLOCK -->
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
+  import { getAuth, createUserWithEmailAndPassword, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+  import { getFirestore, collection, query, where, getDocs, addDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
+  import { getStorage, ref, uploadBytes, getDownloadURL } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-storage.js";
+  // Import the database instance from your firebase config file
+import { db } from './firebase.js';
+  const firebaseConfig = {
+  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
+  authDomain: "hunger-games-cb40e.firebaseapp.com",
+  projectId: "hunger-games-cb40e",
+  storageBucket: "hunger-games-cb40e.firebasestorage.app",
+  messagingSenderId: "1002369787131",
+  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
+};
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth();
+  const db = getFirestore(app);
+  const storage = getStorage(app);
+
+  const form = document.getElementById("catererForm");
+  const successMsg = document.getElementById("successMessage");
+  form.addEventListener("submit", async function (e) {
+  e.preventDefault();
+
+  const email = document.getElementById("userEmail").value.trim();
+  const password = document.getElementById("userPassword").value.trim();
+  const fullName = document.getElementById("userFullName").value.trim();
+  const phone = document.getElementById("userPhone").value.trim();
+  const address = document.getElementById("userAddress").value.trim();
+  const profileImage = document.getElementById("userProfilePic").files[0];
+
+  if (!email || !password || !fullName || !address) {
+    alert("Please fill in all required fields.");
+    return;
+  }
+
+  try {
+    // ✅ Create account first
+    const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+    const user = userCredential.user;
+
+    let imageUrl = "";
+    if (profileImage) {
+      const imagePath = `profile_pics/${user.uid}/${Date.now()}_${profileImage.name}`;
+      const imageRef = ref(storage, imagePath);
+      await uploadBytes(imageRef, profileImage);
+      const downloadURL = await getDownloadURL(imageRef);
+      imageUrl = await getDownloadURL(imageRef);
+    }
+
+    // ✅ Save user data to Firestore
+    await setDoc(doc(db, "users", user.uid), {
+      fullName,
+      phone,
+      address,
+      imageUrl,
+      email,
+      createdAt: serverTimestamp()
+    });
+
+    alert("Registration successful! You can now log in.");
+    window.location.href = "index.html";
+  } catch (error) {
+    console.error("Registration failed:", error);
+    alert("Registration failed: " + error.message);
+  }
+});
+
+</script>
+</body>
+</html>
