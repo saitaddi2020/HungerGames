@@ -79,19 +79,11 @@
   <!-- Firebase SDKs -->
  <!-- KEEP THIS SCRIPT BLOCK -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-  import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-  // Import the database instance from your firebase config file
-import { db } from './firebase.js';
-  
-    const firebaseConfig = {
-  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
-  authDomain: "hunger-games-cb40e.firebaseapp.com",
-  projectId: "hunger-games-cb40e",
-  storageBucket: "hunger-games-cb40e.firebasestorage.app",
-  messagingSenderId: "1002369787131",
-  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
-};
+  import { auth, db, storage } from './firebase.js'; // Import from your central file
+       import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+       import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+       import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
 
     firebase.initializeApp(firebaseConfig);
     const auth = firebase.auth();
@@ -111,52 +103,109 @@ import { db } from './firebase.js';
       }
     });
 
-    // Load unapproved shops
-    function loadPendingShops() {
-      db.collection("caterers").where("approved", "==", false).get().then(snapshot => {
-        const shopList = document.getElementById("shopList");
-        shopList.innerHTML = "";
-        if (snapshot.empty) {
-          shopList.innerHTML = "<p>No pending shops for approval.</p>";
-          return;
-        }
+    // 1. Make sure to import the necessary v9 functions from Firebase
+// import { collection, query, where, getDocs, doc, updateDoc, deleteDoc } from "firebase/firestore";
+// import { db } from './firebase.js'; // Assuming db is exported from your config file
 
-        snapshot.forEach(doc => {
-          const shop = doc.data();
-          const shopCard = document.createElement("div");
-          shopCard.className = "shop-card";
-          shopCard.innerHTML = `
-            <img src="${shop.imageUrl}" alt="${shop.shopName}">
-            <div class="shop-details">
-              <h3>${shop.shopName}</h3>
-              <p><strong>Owner:</strong> ${shop.ownerName}</p>
-              <p><strong>Email:</strong> ${shop.email}</p>
-              <p><strong>Description:</strong> ${shop.shopDescription}</p>
-              <p><strong>Address:</strong> ${shop.address}</p>
-              <button class="btn approve-btn" onclick="approveShop('${doc.id}')">Approve</button>
-              <button class="btn reject-btn" onclick="rejectShop('${doc.id}')">Reject</button>
-            </div>
-          `;
-          shopList.appendChild(shopCard);
-        });
-      });
+const shopList = document.getElementById("shopList");
+
+/**
+ * Fetches unapproved caterers from Firestore and renders them to the page.
+ * Uses modern async/await syntax and error handling.
+ */
+async function loadPendingShops() {
+  shopList.innerHTML = "<p>Loading pending approvals...</p>";
+
+  try {
+    // Use the v9 syntax for querying Firestore
+    const caterersRef = collection(db, "caterers");
+    const q = query(caterersRef, where("approved", "==", false));
+    const snapshot = await getDocs(q);
+
+    if (snapshot.empty) {
+      shopList.innerHTML = "<p>No pending shops for approval.</p>";
+      return;
     }
 
-    function approveShop(id) {
-      db.collection("caterers").doc(id).update({ approved: true }).then(() => {
-        alert("Shop approved!");
-        loadPendingShops();
-      });
-    }
+    // Clear the list before adding new items
+    shopList.innerHTML = "";
 
-    function rejectShop(id) {
-      if (confirm("Are you sure you want to reject and delete this shop?")) {
-        db.collection("caterers").doc(id).delete().then(() => {
-          alert("Shop rejected and deleted.");
-          loadPendingShops();
-        });
+    snapshot.forEach(doc => {
+      const shop = doc.data();
+      const shopCard = document.createElement("div");
+      shopCard.className = "shop-card";
+      shopCard.id = `shop-${doc.id}`; // Add an ID for easy removal later
+
+      // Use data-* attributes for event handling instead of inline onclick
+      shopCard.innerHTML = `
+        <img src="${shop.imageUrl}" alt="${shop.shopName}">
+        <div class="shop-details">
+          <h3>${shop.shopName}</h3>
+          <p><strong>Owner:</strong> ${shop.ownerName}</p>
+          <p><strong>Email:</strong> ${shop.email}</p>
+          <p><strong>Description:</strong> ${shop.shopDescription}</p>
+          <p><strong>Address:</strong> ${shop.address}</p>
+          <button class="btn approve-btn" data-id="${doc.id}">Approve</button>
+          <button class="btn reject-btn" data-id="${doc.id}">Reject</button>
+        </div>
+      `;
+      shopList.appendChild(shopCard);
+    });
+  } catch (error) {
+    console.error("Error loading pending shops:", error);
+    shopList.innerHTML = "<p style='color: red;'>Could not load data. Please try again.</p>";
+  }
+}
+
+/**
+ * Use a single event listener on the parent container (event delegation).
+ * This is more efficient than adding a listener to every button.
+ */
+shopList.addEventListener('click', async (event) => {
+  const button = event.target;
+  const shopId = button.dataset.id;
+
+  if (!shopId) return; // Exit if the click wasn't on a button with a data-id
+
+  // --- Approve Logic ---
+  if (button.classList.contains('approve-btn')) {
+    button.disabled = true;
+    button.textContent = "Approving...";
+    try {
+      const shopRef = doc(db, "caterers", shopId);
+      await updateDoc(shopRef, { approved: true });
+      alert("Shop approved!");
+      document.getElementById(`shop-${shopId}`).remove(); // Remove card from UI
+    } catch (error) {
+      console.error("Error approving shop:", error);
+      alert("Failed to approve shop. Please check the console.");
+      button.disabled = false;
+      button.textContent = "Approve";
+    }
+  }
+
+  // --- Reject Logic ---
+  if (button.classList.contains('reject-btn')) {
+    if (confirm("Are you sure you want to reject and delete this shop?")) {
+      button.disabled = true;
+      button.textContent = "Rejecting...";
+      try {
+        const shopRef = doc(db, "caterers", shopId);
+        await deleteDoc(shopRef);
+        alert("Shop rejected and deleted.");
+        document.getElementById(`shop-${shopId}`).remove(); // Remove card from UI
+      } catch (error) {
+        console.error("Error rejecting shop:", error);
+        alert("Failed to reject shop. Please check the console.");
+        button.disabled = false;
+        button.textContent = "Reject";
       }
     }
+  }
+});
+
+// Initial call to load the data when the page loads
+loadPendingShops();
   </script>
 </body>
 </html>

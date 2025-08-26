@@ -68,129 +68,119 @@
         <p class="status-message" id="loadingMessage">Loading registered admins...</p>
     </div>
 
-    <script type="module">
-        import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-        import { getAuth, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-        import { getFirestore, collection, query, orderBy, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-        // Import the database instance from your firebase config file
-import { db } from './firebase.js';
-       const firebaseConfig = {
-  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
-  authDomain: "hunger-games-cb40e.firebaseapp.com",
-  projectId: "hunger-games-cb40e",
-  storageBucket: "hunger-games-cb40e.firebasestorage.app",
-  messagingSenderId: "1002369787131",
-  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
-};
+   <script type="module">
+    // 1. CORRECT: Import your central 'auth' and 'db' objects.
+    import { auth, db } from './firebase.js';
+    
+    // 2. CORRECT: Import the specific functions you need from the SDKs.
+    import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
+    import { collection, query, orderBy, getDocs, doc, updateDoc, getDoc } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
 
-        const app = initializeApp(firebaseConfig);
-        const auth = getAuth(app);
-        const db = getFirestore(app);
 
-        const SUPER_ADMIN_EMAIL = "saitaddi1432@gmail.com";
-        const adminListContainer = document.getElementById('adminListContainer');
-        const loadingMessage = document.getElementById('loadingMessage');
+    // The rest of your existing code is correct and will now work.
+    const SUPER_ADMIN_EMAIL = "saitaddi1432@gmail.com";
+    const adminListContainer = document.getElementById('adminListContainer');
+    const loadingMessage = document.getElementById('loadingMessage');
 
-        onAuthStateChanged(auth, user => {
-            if (user && user.email === SUPER_ADMIN_EMAIL) {
-                loadAdmins();
-            } else {
-                handleUnauthorizedAccess();
-            }
+    onAuthStateChanged(auth, user => {
+        if (user && user.email === SUPER_ADMIN_EMAIL) {
+            loadAdmins();
+        } else {
+            handleUnauthorizedAccess();
+        }
+    });
+    
+    function handleUnauthorizedAccess() {
+        signOut(auth).finally(() => {
+            const currentPath = window.location.pathname;
+            const newPath = currentPath.substring(0, currentPath.lastIndexOf('/')) + '/super_admin_login.html';
+            window.location.href = newPath;
         });
-        
-        function handleUnauthorizedAccess() {
-            signOut(auth).finally(() => {
-                const currentPath = window.location.pathname;
-                const newPath = currentPath.substring(0, currentPath.lastIndexOf('/')) + '/super_admin_login.html';
-                window.location.href = newPath;
+    }
+
+    function logout() {
+        signOut(auth).catch(err => {
+            console.error("Logout failed:", err);
+            alert("Logout failed. Please try again.");
+        });
+    }
+
+    function renderAdminCard(adminData, docId) {
+        const card = document.createElement("div");
+        card.className = "admin-card";
+        card.id = `admin-${docId}`;
+
+        const createdAt = adminData.timestamp?.toDate().toLocaleString() || "N/A";
+        const statusClass = adminData.approved ? 'approved' : 'not-approved';
+        const statusText = adminData.approved ? '✅ Approved' : '❌ Not Approved';
+
+        let approveButtonHTML = '';
+        if (!adminData.approved) {
+            approveButtonHTML = `<button class="action-btn" onclick="approveAdmin('${docId}', this)">Approve Admin</button>`;
+        }
+
+        card.innerHTML = `
+            <div class="admin-info">
+                <h3>👤 ${adminData.shopName || 'N/A'}</h3>
+                <p><strong>Email:</strong> ${adminData.email || 'N/A'}</p>
+                <p><strong>Registered On:</strong> ${createdAt}</p>
+                <p><strong>Status:</strong> <span class="status ${statusClass}">${statusText}</span></p>
+            </div>
+            <div class="admin-actions">
+                ${approveButtonHTML}
+            </div>
+        `;
+        return card;
+    }
+
+    async function loadAdmins() {
+        loadingMessage.style.display = 'block';
+        adminListContainer.innerHTML = '';
+        adminListContainer.appendChild(loadingMessage);
+
+        try {
+            const q = query(collection(db, "admins"), orderBy("createdAt", "desc"));
+            const snapshot = await getDocs(q);
+            
+            loadingMessage.style.display = 'none';
+
+            if (snapshot.empty) {
+                adminListContainer.innerHTML = "<p class='status-message'>No admins are currently registered.</p>";
+                return;
+            }
+            
+            snapshot.forEach(doc => {
+                const card = renderAdminCard(doc.data(), doc.id);
+                adminListContainer.appendChild(card);
             });
+
+        } catch (err) {
+            console.error("Failed to load admins:", err);
+            loadingMessage.innerText = "Error loading admin data. Please refresh the page.";
+            loadingMessage.style.color = 'var(--danger-color)';
         }
+    }
 
-        function logout() {
-            signOut(auth).catch(err => {
-                console.error("Logout failed:", err);
-                alert("Logout failed. Please try again.");
-            });
+    async function approveAdmin(adminId, buttonElement) {
+        buttonElement.disabled = true;
+        buttonElement.innerText = "Approving...";
+
+        try {
+            const adminRef = doc(db, "admins", adminId);
+            await updateDoc(adminRef, { approved: true });
+            
+            const updatedDoc = await getDoc(adminRef);
+            const updatedCard = renderAdminCard(updatedDoc.data(), adminId);
+            document.getElementById(`admin-${adminId}`).replaceWith(updatedCard);
+        } catch (err) {
+            alert("❌ Failed to approve admin: " + err.message);
+            buttonElement.disabled = false;
+            buttonElement.innerText = "Approve Admin";
         }
+    }
 
-        function renderAdminCard(adminData, docId) {
-            const card = document.createElement("div");
-            card.className = "admin-card";
-            card.id = `admin-${docId}`;
-
-            // ✨ FIX: Changed bitwise OR (|) to logical OR (||)
-            const createdAt = adminData.timestamp?.toDate().toLocaleString() || "N/A";
-            const statusClass = adminData.approved ? 'approved' : 'not-approved';
-            const statusText = adminData.approved ? '✅ Approved' : '❌ Not Approved';
-
-            let approveButtonHTML = '';
-            if (!adminData.approved) {
-                approveButtonHTML = `<button class="action-btn" onclick="approveAdmin('${docId}', this)">Approve Admin</button>`;
-            }
-
-            card.innerHTML = `
-                <div class="admin-info">
-                    <h3>👤 ${adminData.username || 'N/A'}</h3>
-                    <p><strong>Email:</strong> ${adminData.email || 'N/A'}</p>
-                    <p><strong>Registered On:</strong> ${createdAt}</p>
-                    <p><strong>Status:</strong> <span class="status ${statusClass}">${statusText}</span></p>
-                </div>
-                <div class="admin-actions">
-                    ${approveButtonHTML}
-                </div>
-            `;
-            return card;
-        }
-
-        async function loadAdmins() {
-            loadingMessage.style.display = 'block';
-            adminListContainer.innerHTML = '';
-            adminListContainer.appendChild(loadingMessage);
-
-            try {
-                const q = query(collection(db, "admins"), orderBy("timestamp", "desc"));
-                const snapshot = await getDocs(q);
-                
-                loadingMessage.style.display = 'none';
-
-                if (snapshot.empty) {
-                    adminListContainer.innerHTML = "<p class='status-message'>No admins are currently registered.</p>";
-                    return;
-                }
-                
-                snapshot.forEach(doc => {
-                    const card = renderAdminCard(doc.data(), doc.id);
-                    adminListContainer.appendChild(card);
-                });
-
-            } catch (err) {
-                console.error("Failed to load admins:", err);
-                loadingMessage.innerText = "Error loading admin data. Please refresh the page.";
-                loadingMessage.style.color = 'var(--danger-color)';
-            }
-        }
-
-        async function approveAdmin(adminId, buttonElement) {
-            buttonElement.disabled = true;
-            buttonElement.innerText = "Approving...";
-
-            try {
-                const adminRef = doc(db, "admins", adminId);
-                await updateDoc(adminRef, { approved: true });
-                
-                const updatedDoc = await getDoc(adminRef);
-                const updatedCard = renderAdminCard(updatedDoc.data(), adminId);
-                document.getElementById(`admin-${adminId}`).replaceWith(updatedCard);
-            } catch (err) {
-                alert("❌ Failed to approve admin: " + err.message);
-                buttonElement.disabled = false;
-                buttonElement.innerText = "Approve Admin";
-            }
-        }
-
-        window.logout = logout;
-        window.approveAdmin = approveAdmin;
-    </script>
+    window.logout = logout;
+    window.approveAdmin = approveAdmin;
+</script>
 </body>
 </html>

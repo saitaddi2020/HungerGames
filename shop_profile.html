@@ -126,19 +126,11 @@
 <div id="toast"></div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    import { getFirestore, collection, query, where, getDocs, addDoc, updateDoc, increment, serverTimestamp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-firestore.js";
-    // Import the database instance from your firebase config file
-import { db } from './firebase.js';
-    const firebaseConfig = {
-  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
-  authDomain: "hunger-games-cb40e.firebaseapp.com",
-  projectId: "hunger-games-cb40e",
-  storageBucket: "hunger-games-cb40e.firebasestorage.app",
-  messagingSenderId: "1002369787131",
-  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
-};
+    import { auth, db, storage } from './firebase.js'; // Import from your central file
+import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
+
 
     const app = initializeApp(firebaseConfig);
     const auth = getAuth(app);
@@ -165,9 +157,11 @@ import { db } from './firebase.js';
 
     async function loadShopAndProducts(username) {
         try {
-            const caterersRef = collection(db, "admins");
-            const qShop = query(caterersRef, where("businessName", "==", username), where("approved", "==", true));
-            const shopSnapshot = await getDocs(qShop);
+            // Inside loadShopAndProducts() function in shop_profile.html
+const caterersRef = collection(db, "admins");
+// FIX THIS LINE
+const qShop = query(caterersRef, where("shopName", "==", username), where("approved", "==", true));
+const shopSnapshot = await getDocs(qShop);
 
             if (shopSnapshot.empty) throw new Error("Shop not found or not approved.");
             

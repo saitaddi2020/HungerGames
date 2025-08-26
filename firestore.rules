@@ -42,10 +42,12 @@ service cloud.firestore {
     }
 
     // ✅ ORDERS COLLECTION
-    match /orders/{orderId} {
-      allow create: if request.auth.uid == request.resource.data.userId;
 
-      allow read, update: if request.auth.uid == resource.data.userId;
-    }
-  }
+match /orders/{orderId} {
+  allow create: if request.auth.uid == request.resource.data.userId;
+  
+  // FIX: This allows both the customer and the involved caterer(s) to access the order
+  allow read, update: if request.auth.uid == resource.data.userId 
+                      || request.auth.uid in resource.data.catererIds;
+}
 }

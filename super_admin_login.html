@@ -5,67 +5,153 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Super Admin Login</title>
     <style>
-        :root {
-            --primary-color: #1a73e8;
-            --primary-hover: #155ab6;
-            --error-color: #d93025;
-            --light-gray: #f0f2f5;
-            --dark-gray: #333;
-            --secondary-color: #5f6368; /* Added for link styling */
-            --border-color: #dadce0;
-        }
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background-color: var(--light-gray);
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-        }
-        .login-container {
-            background: #fff;
-            padding: 40px;
-            border-radius: 12px;
-            box-shadow: 0 6px 24px rgba(0, 0, 0, 0.1);
-            width: 100%;
-            max-width: 380px;
-            box-sizing: border-box;
-            text-align: center;
-        }
-        h2 { margin: 0 0 25px; color: var(--dark-gray); font-size: 24px; }
-        .input-group { margin-bottom: 20px; }
-        input {
-            width: 100%; padding: 14px; border: 1px solid var(--border-color);
-            border-radius: 8px; font-size: 16px; box-sizing: border-box; transition: border-color 0.2s;
-        }
-        input:focus { outline: none; border-color: var(--primary-color); box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2); }
-        button {
-            width: 100%; padding: 14px; background-color: var(--primary-color); color: white;
-            border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
-            cursor: pointer; transition: background-color 0.2s, opacity 0.2s;
-        }
-        button:hover { background-color: var(--primary-hover); }
-        button:disabled { opacity: 0.7; cursor: not-allowed; }
-        .error { color: var(--error-color); margin-top: 15px; min-height: 20px; font-weight: 500; }
-        
-        /* ✨ FIX: Styles for the new redirect link */
-        .footer-link {
-            margin-top: 25px;
-            text-align: center;
-        }
-        .footer-link a {
-            color: var(--secondary-color);
-            text-decoration: none;
-            font-weight: 500;
-            font-size: 14px;
-            transition: color 0.2s;
-        }
-        .footer-link a:hover {
-            color: var(--primary-color);
-            text-decoration: underline;
-        }
-    </style>
+    /* ========================================
+      MODERN DYNAMIC STYLING - LIGHT & SOFT UI THEME
+      (Consistent with other auth pages)
+      ========================================
+    */
+
+    /* --- 1. CSS Variables for New Theme --- */
+    :root {
+        --primary-color: #FF6347; /* Tomato Coral */
+        --primary-light: #FF7F50;
+        --error-color: #d93025;
+        --background-color: #e0e5ec;
+        --surface-color: #e0e5ec;
+        --text-primary: #334155;
+        --text-secondary: #64748B;
+
+        --border-radius: 12px;
+        --shadow-light: -8px -8px 16px #ffffff;
+        --shadow-dark: 8px 8px 16px #a3b1c6;
+        --shadow-inset: inset 4px 4px 8px #a3b1c6, inset -4px -4px 8px #ffffff;
+        --transition-speed: 0.3s;
+    }
+
+    /* --- 2. Base & Body Styles --- */
+    body {
+        font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+        background-color: var(--background-color);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        height: 100vh;
+        margin: 0;
+    }
+
+    /* --- 3. Soft UI (Neumorphism) Container --- */
+    .login-container {
+        background: var(--surface-color);
+        padding: 40px;
+        border-radius: var(--border-radius);
+        box-shadow: var(--shadow-light), var(--shadow-dark);
+        width: 100%;
+        max-width: 380px;
+        box-sizing: border-box;
+        text-align: center;
+    }
+
+    h2 { 
+        margin: 0 0 25px; 
+        color: var(--text-primary); 
+        font-size: 24px; 
+    }
+
+    /* --- 4. Input Fields (Inset Style) --- */
+    .input-group { 
+        margin-bottom: 20px; 
+    }
+
+    input {
+        width: 100%; 
+        padding: 14px; 
+        border: none;
+        border-radius: var(--border-radius); 
+        font-size: 16px; 
+        box-sizing: border-box; 
+        transition: all var(--transition-speed) ease;
+        background: var(--surface-color);
+        color: var(--text-primary);
+        box-shadow: var(--shadow-inset);
+    }
+
+    input:focus { 
+        outline: none; 
+        box-shadow: var(--shadow-inset), 0 0 0 2px var(--primary-color);
+    }
+
+    /* --- 5. Reusable Button Styles --- */
+    button {
+        width: 100%; 
+        padding: 14px; 
+        background-color: var(--primary-color); 
+        color: white;
+        border: none; 
+        border-radius: var(--border-radius); 
+        font-size: 16px; 
+        font-weight: 600;
+        cursor: pointer; 
+        transition: all var(--transition-speed) ease;
+        box-shadow: var(--shadow-light), var(--shadow-dark);
+    }
+
+    button:hover:not(:disabled) { 
+        background-color: var(--primary-light);
+        transform: translateY(-2px);
+    }
+
+    button:active:not(:disabled) {
+        box-shadow: var(--shadow-inset);
+        transform: translateY(1px);
+    }
+
+    button:disabled { 
+        opacity: 0.7; 
+        cursor: not-allowed; 
+        box-shadow: none;
+    }
+
+    .error { 
+        color: var(--error-color); 
+        margin-top: 15px; 
+        min-height: 20px; 
+        font-weight: 500; 
+    }
+    
+    /* --- 6. Animated Underline Link --- */
+    .footer-link {
+        margin-top: 25px;
+        text-align: center;
+    }
+    .footer-link a {
+        color: var(--text-primary);
+        text-decoration: none;
+        font-weight: 500;
+        font-size: 14px;
+        transition: color var(--transition-speed) ease;
+        position: relative;
+        padding-bottom: 4px;
+    }
+    .footer-link a:hover {
+        color: var(--primary-color);
+    }
+    .footer-link a::after {
+        content: '';
+        position: absolute;
+        width: 100%;
+        height: 2px;
+        bottom: 0;
+        left: 0;
+        background: var(--primary-color);
+        transform: scaleX(0);
+        transform-origin: bottom right;
+        transition: transform var(--transition-speed) ease-out;
+    }
+    .footer-link a:hover::after {
+        transform: scaleX(1);
+        transform-origin: bottom left;
+    }
+</style>
 </head>
 <body>
 
@@ -89,22 +175,17 @@
 </div>
 
 <script type="module">
-    import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-    import { getAuth, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-    // Import the database instance from your firebase config file
-import { db } from './firebase.js';
-    const firebaseConfig = {
-  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
-  authDomain: "hunger-games-cb40e.firebaseapp.com",
-  projectId: "hunger-games-cb40e",
-  storageBucket: "hunger-games-cb40e.firebasestorage.app",
-  messagingSenderId: "1002369787131",
-  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
-};
+    // 1. Import your central 'auth' object from your local file.
+    import { auth } from './firebase.js'; 
+    
+    // 2. THE FIX: Add this line back to import the necessary Auth functions.
+    import { signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
 
-    const app = initializeApp(firebaseConfig);
-    const auth = getAuth(app);
+    // (Ensure all old initialization code like 'initializeApp', 'firebaseConfig', 
+    // and 'getAuth' has been deleted from this file).
 
+
+    // The rest of your login code remains the same and is correct.
     const loginForm = document.getElementById('loginForm');
     const emailInput = document.getElementById('email');
     const passwordInput = document.getElementById('password');
@@ -127,6 +208,7 @@ import { db } from './firebase.js';
         loginButton.innerText = "Logging in...";
 
         try {
+            // This will now work because signInWithEmailAndPassword is properly imported.
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
             
             if (userCredential.user.email === SUPER_ADMIN_EMAIL) {

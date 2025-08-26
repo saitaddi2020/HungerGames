@@ -21,18 +21,10 @@
 
    <!-- KEEP THIS SCRIPT BLOCK -->
 <script type="module">
-  import { initializeApp } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-app.js";
-  import { getAuth } from "https://www.gstatic.com/firebasejs/9.6.1/firebase-auth.js";
-  // Import the database instance from your firebase config file
-import { db } from './firebase.js';
-        const firebaseConfig = {
-  apiKey: "AIzaSyCsIFvtzzbx3OYXZr2MKCk7ml8jZvKUOVs",
-  authDomain: "hunger-games-cb40e.firebaseapp.com",
-  projectId: "hunger-games-cb40e",
-  storageBucket: "hunger-games-cb40e.firebasestorage.app",
-  messagingSenderId: "1002369787131",
-  appId: "1:1002369787131:web:39e602e3440d5fd6a1fc5e"
-};
+ import { auth, db, storage } from './firebase.js'; // Import from your central file
+       import { onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+       import { getFirestore, collection, query, where, onSnapshot, doc, getDoc, addDoc, updateDoc, deleteDoc, serverTimestamp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+       import { getStorage, ref, uploadBytes, getDownloadURL, deleteObject } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-storage.js";
         
         const { initializeApp } = firebase;
         const { getAuth, onAuthStateChanged } = firebase.auth;

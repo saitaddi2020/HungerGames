@@ -1,5 +1,7 @@
 {
   "projects": {
-    "default": "catering-c77bb"
-  }
+    "default": "hunger-games-cb40e"
+  },
+  "targets": {},
+  "etags": {}
 }
